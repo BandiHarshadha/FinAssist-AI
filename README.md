@@ -429,11 +429,6 @@ Please make sure to:
 
 ---
 
-## 📄 License
-
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
-
----
 
 **Built with ❤️ by [Bandi Harshadha](https://github.com/BandiHarshadha)**
 
