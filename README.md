@@ -9,7 +9,7 @@
 ![Google Gemini](https://img.shields.io/badge/Google%20Gemini-AI-4285F4?style=for-the-badge&logo=google&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
 
-> An AI-powered financial advisory platform built with a multi-agent orchestrator architecture, leveraging Google Gemini AI to provide personalized insights across banking, loans, investments, insurance, and budgeting.
+> An AI-powered financial advisory platform built with a multi-agent orchestrator architecture, leveraging Google Gemini AI to provide personalized insights across banking, loans, investments, insurance, and budgeting. 
 
 ---
 
