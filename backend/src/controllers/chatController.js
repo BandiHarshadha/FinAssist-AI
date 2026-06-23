@@ -1,88 +1,66 @@
-import { financialWorkflow } from "../workflows/financialWorkflow.js";
-import { getMemory, clearMemory } from "../memory/conversationMemory.js";
-import { writeAuditLog } from "../services/auditService.js";
+import { finAssistBrain } from "../agents/finAssistBrain.js";
+import {
+  getMemory,
+  resetMemory
+} from "../memory/userProfileMemory.js";
 
 export const chat = async (req, res) => {
-  const traceId = `trace_${Date.now()}`;
-
   try {
     const { message } = req.body;
 
-    if (!message || message.trim() === "") {
+    if (!message) {
       return res.status(400).json({
         success: false,
-        output: "Message is required",
-        trace_id: traceId,
-        finish_reason: "error",
-        cost_usd: 0,
+        message: "Message is required"
       });
     }
 
-    const result = await financialWorkflow(message);
+    const result = await finAssistBrain(message);
 
-    writeAuditLog({
-      timestamp: new Date().toISOString(),
-      trace_id: traceId,
-      userMessage: message,
-      intent: result.intent,
+    res.json({
+      success: true,
       agent: result.agent,
-      tool: result.tool,
-      privacy: result.privacy,
-      finish_reason: "completed",
-    });
-
-    return res.json({
-      ...result,
-
-      output: result.reply,
-      trace_id: traceId,
-      finish_reason: "completed",
-      cost_usd: 0.01,
+      reply: result.reply
     });
   } catch (error) {
-    console.log(error);
-
-    writeAuditLog({
-      timestamp: new Date().toISOString(),
-      trace_id: traceId,
-      error: error.message,
-      finish_reason: "error",
-    });
-
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
-      output: "Internal Server Error",
-      trace_id: traceId,
-      finish_reason: "error",
-      cost_usd: 0,
+      message: "Chat failed",
+      error: error.message
     });
   }
 };
 
 export const getChatMemory = (req, res) => {
-  const traceId = `trace_${Date.now()}`;
+  try {
+    const memory = getMemory();
 
-  res.json({
-    success: true,
-    memory: getMemory(),
-    output: "Memory fetched successfully",
-    trace_id: traceId,
-    finish_reason: "completed",
-    cost_usd: 0,
-  });
+    res.json({
+      success: true,
+      memory
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to get memory",
+      error: error.message
+    });
+  }
 };
 
 export const resetChatMemory = (req, res) => {
-  const traceId = `trace_${Date.now()}`;
+  try {
+    resetMemory();
 
-  clearMemory();
-
-  res.json({
-    success: true,
-    message: "Memory cleared",
-    output: "Memory cleared",
-    trace_id: traceId,
-    finish_reason: "completed",
-    cost_usd: 0,
-  });
+    res.json({
+      success: true,
+      message: "Memory reset successfully"
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to reset memory",
+      error: error.message
+    });
+  }
 };
