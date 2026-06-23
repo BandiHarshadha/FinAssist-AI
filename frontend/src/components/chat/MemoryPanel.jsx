@@ -1,21 +1,21 @@
 import { useEffect, useState } from "react";
-import { getMemory, clearMemory } from "../../services/memoryService";
+import { getChatMemory, resetChatMemory } from "../../services/chatService";
 
 function MemoryPanel() {
-  const [memory, setMemory] = useState([]);
+  const [memory, setMemory] = useState(null);
 
   const loadMemory = async () => {
     try {
-      const data = await getMemory();
-      setMemory(data);
+      const res = await getChatMemory();
+      setMemory(res.memory);
     } catch (error) {
-      console.error(error);
+      console.error("Memory fetch failed:", error);
     }
   };
 
-  const handleClear = async () => {
-    await clearMemory();
-    setMemory([]);
+  const clearMemory = async () => {
+    await resetChatMemory();
+    loadMemory();
   };
 
   useEffect(() => {
@@ -23,38 +23,38 @@ function MemoryPanel() {
   }, []);
 
   return (
-    <div className="mt-6 rounded-xl bg-slate-800 p-4">
-      <div className="flex items-center justify-between">
-        <h3 className="font-bold text-white">🧠 Memory</h3>
+    <aside className="w-80 border-l border-slate-800 bg-slate-900 p-5 text-white">
+      <h2 className="mb-4 text-xl font-bold text-cyan-300">
+        🧠 Memory Agent
+      </h2>
 
-        <button
-          onClick={handleClear}
-          className="text-sm text-red-400 hover:text-red-300"
-        >
-          Clear
-        </button>
-      </div>
+      {!memory ? (
+        <p className="text-slate-400">No memory loaded</p>
+      ) : (
+        <div className="space-y-3 text-sm">
+          <p><b>Name:</b> {memory.name || "Not set"}</p>
+          <p><b>Income:</b> ₹{memory.income || 0}</p>
+          <p><b>Expenses:</b> ₹{memory.expenses || 0}</p>
+          <p><b>EMI:</b> ₹{memory.emi || 0}</p>
+          <p><b>Goal:</b> {memory.goal || "Not set"}</p>
+          <p><b>Target:</b> ₹{memory.targetAmount || 0}</p>
+        </div>
+      )}
 
       <button
         onClick={loadMemory}
-        className="mt-3 w-full rounded-lg bg-cyan-500 py-2 text-sm font-semibold text-white"
+        className="mt-5 w-full rounded-lg bg-cyan-600 py-2 font-semibold hover:bg-cyan-700"
       >
         Refresh Memory
       </button>
 
-      <div className="mt-4 max-h-52 space-y-2 overflow-y-auto">
-        {memory.length === 0 ? (
-          <p className="text-sm text-slate-400">No memory yet.</p>
-        ) : (
-          memory.map((item, index) => (
-            <div key={index} className="rounded-lg bg-slate-900 p-2 text-sm">
-              <p className="text-cyan-300">{item.role}</p>
-              <p className="text-slate-300">{item.text}</p>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
+      <button
+        onClick={clearMemory}
+        className="mt-3 w-full rounded-lg bg-red-600 py-2 font-semibold hover:bg-red-700"
+      >
+        Reset Memory
+      </button>
+    </aside>
   );
 }
 

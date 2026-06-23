@@ -1,24 +1,34 @@
-function MessageBubble({ sender, text }) {
+import AgentExecutionPanel from "./AgentExecutionPanel";
+
+function MessageBubble({ sender, text, agent }) {
   const isUser = sender === "user";
 
   return (
     <div
-      className={`flex mb-6 ${
+      className={`flex mb-4 ${
         isUser ? "justify-end" : "justify-start"
       }`}
     >
       <div
-        className={`max-w-xl rounded-2xl px-5 py-4 ${
+        className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-md ${
           isUser
-            ? "bg-cyan-500 text-white"
-            : "bg-slate-800 text-white"
+            ? "bg-blue-600 text-white"
+            : "bg-white text-gray-900 border"
         }`}
       >
-        <p className="text-sm mb-2 font-semibold">
-          {isUser ? "🧑 You" : "🤖 FinAssist AI"}
-        </p>
+        {!isUser && agent && (
+          <div className="mb-2 font-semibold text-blue-600">
+            🤖 {agent}
+          </div>
+        )}
 
-        <p>{text}</p>
+        {!isUser && agent === "Multi-Agent Orchestrator" && (
+          <AgentExecutionPanel />
+        )}
+
+        <div className="whitespace-pre-line text-sm">
+          {text || "No response available"}
+        </div>
       </div>
     </div>
   );
