@@ -9,3 +9,4 @@ erasure-procedure.md
 rollback.md
 kill-switch.md
 secret-rotation.md
+/src/generated/prisma

@@ -1,32 +1,39 @@
 import { finAssistBrain } from "../agents/finAssistBrain.js";
-import {
-  getMemory,
-  resetMemory
-} from "../memory/userProfileMemory.js";
+import { getMemory, resetMemory } from "../memory/userProfileMemory.js";
+import { redactSensitiveData } from "../services/privacyRedactor.js";
 
 export const chat = async (req, res) => {
   try {
     const { message } = req.body;
 
-    if (!message) {
+    if (!message || typeof message !== "string") {
       return res.status(400).json({
         success: false,
-        message: "Message is required"
+        message: "Message is required",
       });
     }
 
-    const result = await finAssistBrain(message);
+    const privacyResult = redactSensitiveData(message);
+    const safeMessage = privacyResult.redactedText;
 
-    res.json({
+    const result = await finAssistBrain(safeMessage);
+
+    return res.json({
       success: true,
       agent: result.agent,
-      reply: result.reply
+      reply: result.reply,
+      privacy: {
+        enabled: true,
+        redacted: privacyResult.isSensitive,
+        findings: privacyResult.findings,
+        findingsCount: privacyResult.findings.length,
+      },
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Chat failed",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -35,15 +42,15 @@ export const getChatMemory = (req, res) => {
   try {
     const memory = getMemory();
 
-    res.json({
+    return res.json({
       success: true,
-      memory
+      memory,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Failed to get memory",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -52,15 +59,15 @@ export const resetChatMemory = (req, res) => {
   try {
     resetMemory();
 
-    res.json({
+    return res.json({
       success: true,
-      message: "Memory reset successfully"
+      message: "Memory reset successfully",
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Failed to reset memory",
-      error: error.message
+      error: error.message,
     });
   }
 };

@@ -1,9 +1,7 @@
 import ChatWindow from "./ChatWindow";
 
 function ChatArea() {
-  const setAgentInfo = () => {};
-
-  return <ChatWindow setAgentInfo={setAgentInfo} />;
+  return <ChatWindow />;
 }
 
 export default ChatArea;

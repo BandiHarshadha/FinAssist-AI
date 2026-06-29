@@ -8,11 +8,24 @@ let userMemory = {
 };
 
 export const saveMemory = (message) => {
+  if (
+    message.includes("[REDACTED_ACCOUNT_NUMBER]") ||
+    message.includes("[REDACTED_IFSC]") ||
+    message.includes("[REDACTED_PAN]") ||
+    message.includes("[REDACTED_AADHAAR]") ||
+    message.includes("[REDACTED_CARD_NUMBER]") ||
+    message.includes("[REDACTED_UPI]") ||
+    message.includes("[REDACTED_PHONE]") ||
+    message.includes("[REDACTED_EMAIL]")
+  ) {
+    console.log("✅ Sensitive banking data was redacted before memory save");
+  }
+
   const lower = message.toLowerCase();
 
   const incomeMatch = message.match(/(?:income|earn|salary).*?(\d+)/i);
   const expensesMatch = message.match(/(?:expenses|spend).*?(\d+)/i);
-  const emiMatch = message.match(/(?:emi|loan).*?(\d+)/i);
+  const emiMatch = message.match(/(?:emi).*?(\d+)/i);
   const targetMatch = message.match(/(?:target|save).*?(\d+)/i);
   const nameMatch = message.match(/(?:name is|i am|my name is)\s+([a-zA-Z]+)/i);
 
@@ -25,6 +38,8 @@ export const saveMemory = (message) => {
   if (lower.includes("house")) userMemory.goal = "House";
   else if (lower.includes("car")) userMemory.goal = "Car";
   else if (lower.includes("emergency fund")) userMemory.goal = "Emergency Fund";
+  else if (lower.includes("business")) userMemory.goal = "Business";
+  else if (lower.includes("education")) userMemory.goal = "Education";
 };
 
 export const getMemory = () => userMemory;
