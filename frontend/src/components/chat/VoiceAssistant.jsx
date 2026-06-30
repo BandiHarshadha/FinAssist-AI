@@ -1,10 +1,12 @@
 import { useRef, useState } from "react";
 import DigitalTwinCard from "./DigitalTwinCard";
+import AiCfpCard from "./AiCfpCard";
 
 function VoiceAssistant() {
   const [transcript, setTranscript] = useState("");
   const [messages, setMessages] = useState([]);
   const [digitalTwin, setDigitalTwin] = useState(null);
+  const [aiCfpData, setAiCfpData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [listening, setListening] = useState(false);
 
@@ -62,15 +64,23 @@ function VoiceAssistant() {
         setDigitalTwin(data.data);
       }
 
-      const assistantText =
-        data.reply || data.message || "No reply received.";
+      if (
+        (data.agent === "AI CFP Agent" ||
+          data.agent === "Financial Planning Review") &&
+        data.data
+      ) {
+        setAiCfpData(data.data);
+      }
+
+      const assistantText = data.reply || data.message || "No reply received.";
 
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          agent: data.agent || "FinAssist Agent",
+          agent: data.agent || "FinAssist",
           text: assistantText,
+          data: data.data || null,
         },
       ]);
 
@@ -159,6 +169,7 @@ function VoiceAssistant() {
     setMessages([]);
     setTranscript("");
     setDigitalTwin(null);
+    setAiCfpData(null);
     latestTranscriptRef.current = "";
     window.speechSynthesis.cancel();
   };
@@ -169,7 +180,7 @@ function VoiceAssistant() {
         <div>
           <h2 className="text-xl font-semibold">FinAssist Voice Assistant</h2>
           <p className="text-sm text-slate-400">
-            Ask about savings, goals, loans, investments, or your digital twin.
+            Ask about savings, goals, loans, investments, digital twin, or financial planning.
           </p>
         </div>
 
@@ -188,6 +199,7 @@ function VoiceAssistant() {
             <p>Try: My income is 75000 and expenses are 25000</p>
             <p>Try: My EMI is 15000</p>
             <p>Try: Show my financial digital twin</p>
+            <p>Try: Run financial review</p>
           </div>
         ) : (
           messages.map((message, index) => (
@@ -200,7 +212,11 @@ function VoiceAssistant() {
               }`}
             >
               <p className="text-xs text-slate-300 mb-1">{message.agent}</p>
-              <p>{message.text}</p>
+              <p className="whitespace-pre-line">{message.text}</p>
+
+              {(message.agent === "AI CFP Agent" ||
+                message.agent === "Financial Planning Review") &&
+                message.data && <AiCfpCard data={message.data} />}
             </div>
           ))
         )}
@@ -214,6 +230,7 @@ function VoiceAssistant() {
       </div>
 
       <DigitalTwinCard data={digitalTwin} />
+      <AiCfpCard data={aiCfpData} />
 
       <textarea
         className="w-full min-h-[90px] bg-slate-950 border border-slate-700 rounded-xl p-4 text-white outline-none mt-4"
@@ -251,9 +268,7 @@ function VoiceAssistant() {
       </div>
 
       {listening && (
-        <p className="mt-3 text-purple-300">
-          Listening now. Speak clearly.
-        </p>
+        <p className="mt-3 text-purple-300">Listening now. Speak clearly.</p>
       )}
     </div>
   );

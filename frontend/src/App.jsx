@@ -6,8 +6,9 @@ import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Settings from "./pages/Settings";
+import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
-import SystemStatus from "./pages/SystemStatus";
+
 function App() {
   return (
     <BrowserRouter>
@@ -15,11 +16,11 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/chat" element={<Chat />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/reports" element={<Reports />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<NotFound />} />
-        <Route path="/status" element={<SystemStatus />} />
       </Routes>
     </BrowserRouter>
   );

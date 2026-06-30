@@ -2,6 +2,18 @@ export function detectIntent(transcript) {
   const text = String(transcript || "").toLowerCase();
 
   if (
+    text.includes("ai cfp") ||
+    text.includes("cfp") ||
+    text.includes("financial planning") ||
+    text.includes("financial planner") ||
+    text.includes("financial review") ||
+    text.includes("money plan") ||
+    text.includes("personal finance review")
+  ) {
+    return "ai_cfp";
+  }
+
+  if (
     text.includes("what if") ||
     text.includes("simulate") ||
     text.includes("simulation")
@@ -19,9 +31,8 @@ export function detectIntent(transcript) {
   }
 
   if (
-    text.includes("review") ||
     text.includes("full profile") ||
-    text.includes("financial plan") ||
+    text.includes("complete profile review") ||
     text.includes("langgraph")
   ) {
     return "full_review";
