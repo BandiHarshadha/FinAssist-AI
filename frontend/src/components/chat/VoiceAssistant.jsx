@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { Send, Mic, Square, Trash2, Bot } from "lucide-react";
+import MessageBubble from "./MessageBubble";
 
 function VoiceAssistant() {
   const [messages, setMessages] = useState([]);
@@ -7,13 +9,6 @@ function VoiceAssistant() {
 
   const recognitionRef = useRef(null);
   const latestTranscriptRef = useRef("");
-
-  useEffect(() => {
-    fetch("http://localhost:5001/api/voice/history")
-      .then((res) => res.json())
-      .then((data) => setMessages(data.history || []))
-      .catch(() => {});
-  }, []);
 
   const speak = (text) => {
     window.speechSynthesis.cancel();
@@ -26,24 +21,55 @@ function VoiceAssistant() {
   const sendToBackend = async (text) => {
     if (!text.trim()) return;
 
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "user",
+        text,
+        time: new Date().toLocaleTimeString(),
+      },
+    ]);
+
     try {
-      const res = await fetch("http://localhost:5001/api/voice/message", {
+      const res = await fetch("http://localhost:5000/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transcript: text }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: text }),
       });
 
       const data = await res.json();
 
       if (data.success) {
-        setMessages(data.history || []);
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            text: data.reply,
+            agent: data.agent || "FinAssist AI",
+            data: data.data || null,
+            time: new Date().toLocaleTimeString(),
+          },
+        ]);
+
         speak(data.reply);
       } else {
         speak("Sorry, I could not understand that.");
       }
-    } catch {
+    } catch (error) {
+      console.error("Backend Error:", error);
       speak("Backend is not responding.");
     }
+  };
+
+  const handleSend = () => {
+    const text = transcript.trim();
+    if (!text) return;
+
+    sendToBackend(text);
+    setTranscript("");
+    latestTranscriptRef.current = "";
   };
 
   const startListening = () => {
@@ -56,6 +82,7 @@ function VoiceAssistant() {
     }
 
     const recognition = new SpeechRecognition();
+
     recognition.lang = "en-IN";
     recognition.continuous = false;
     recognition.interimResults = false;
@@ -70,8 +97,11 @@ function VoiceAssistant() {
 
     recognition.onend = () => {
       setListening(false);
+
       if (latestTranscriptRef.current) {
         sendToBackend(latestTranscriptRef.current);
+        latestTranscriptRef.current = "";
+        setTranscript("");
       }
     };
 
@@ -89,20 +119,7 @@ function VoiceAssistant() {
     setListening(false);
   };
 
-  const handleSend = () => {
-    const text = transcript.trim();
-    if (!text) return;
-
-    latestTranscriptRef.current = text;
-    sendToBackend(text);
-    setTranscript("");
-  };
-
-  const clearChat = async () => {
-    await fetch("http://localhost:5001/api/voice/history", {
-      method: "DELETE",
-    });
-
+  const clearChat = () => {
     setMessages([]);
     setTranscript("");
     latestTranscriptRef.current = "";
@@ -110,196 +127,90 @@ function VoiceAssistant() {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto bg-slate-900 rounded-2xl p-5 shadow-xl border border-slate-800">
-      <div className="flex items-center justify-between mb-4">
+    <div className="flex h-[calc(100vh-64px)] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl">
+      <div className="flex items-center justify-between border-b border-slate-200 px-8 py-6">
         <div>
-          <h2 className="text-2xl font-bold text-white">FinAssist AI</h2>
-          <p className="text-sm text-slate-400">
-            Your intelligent money companion for smarter financial decisions.
+          <p className="text-sm font-bold uppercase tracking-widest text-blue-600">
+            AI Banking Assistant
+          </p>
+
+          <h1 className="mt-1 text-3xl font-extrabold text-slate-900">
+            FinAssist AI Chat
+          </h1>
+
+          <p className="mt-1 text-slate-500">
+            Ask about savings, loans, investments, insurance, cards or financial planning.
           </p>
         </div>
 
         <button
           onClick={clearChat}
-          className="bg-slate-800 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm border border-slate-700"
+          className="flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100"
         >
+          <Trash2 size={18} />
           Clear Chat
         </button>
       </div>
 
-      <div className="h-[480px] overflow-y-auto bg-slate-950 rounded-xl p-4 space-y-4 mb-4 border border-slate-800">
+      <div className="flex-1 overflow-y-auto bg-slate-50 px-8 py-6">
         {messages.length === 0 ? (
-          <p className="text-slate-500 text-center mt-40">
-            Start a conversation about your money, goals, loans, or investments.
-          </p>
-        ) : (
-          messages.map((msg, index) => (
-            <div
-              key={index}
-              className={`p-4 rounded-xl max-w-[90%] border ${
-                msg.role === "user"
-                  ? "bg-blue-600/20 border-blue-500/40 text-white ml-auto"
-                  : "bg-slate-900 border-slate-700 text-white mr-auto"
-              }`}
-            >
-              {msg.agent && msg.role !== "user" && (
-                <p className="text-xs text-cyan-400 mb-2 font-semibold uppercase tracking-wide">
-                  {msg.agent}
-                </p>
-              )}
+          <div className="flex h-full items-center justify-center">
+            <div className="max-w-xl text-center">
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-100 text-blue-700">
+                <Bot size={32} />
+              </div>
 
-              <p className="text-sm leading-relaxed text-slate-100">
-                {msg.text || msg.content}
+              <h2 className="text-2xl font-bold text-slate-900">
+                Start your financial conversation
+              </h2>
+
+              <p className="mt-3 text-slate-500">
+                Try asking: “Show my financial digital twin” or “Create my AI CFP report.”
               </p>
-
-              {msg.data?.type === "digital_twin" && (
-                <div className="mt-4 rounded-xl border border-indigo-500/40 bg-slate-950 overflow-hidden">
-                  <div className="bg-indigo-600/20 px-4 py-3 border-b border-indigo-500/30">
-                    <h3 className="text-lg font-bold text-indigo-200">
-                      Virtual Financial Digital Twin
-                    </h3>
-                    <p className="text-sm text-slate-300 mt-1">
-                      {msg.data.message}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-0 text-sm">
-                    <div className="p-4 border-b border-r border-slate-800">
-                      <p className="text-slate-400">Monthly Income</p>
-                      <p className="text-xl font-bold">₹{msg.data.income}</p>
-                    </div>
-                    <div className="p-4 border-b border-r border-slate-800">
-                      <p className="text-slate-400">Expenses</p>
-                      <p className="text-xl font-bold">₹{msg.data.expenses}</p>
-                    </div>
-                    <div className="p-4 border-b border-slate-800">
-                      <p className="text-slate-400">EMI Load</p>
-                      <p className="text-xl font-bold">{msg.data.emiLoad}%</p>
-                    </div>
-                    <div className="p-4 border-r border-slate-800">
-                      <p className="text-slate-400">Monthly Savings</p>
-                      <p className="text-xl font-bold text-emerald-300">
-                        ₹{msg.data.savings}
-                      </p>
-                    </div>
-                    <div className="p-4 border-r border-slate-800">
-                      <p className="text-slate-400">Health Score</p>
-                      <p className="text-xl font-bold">
-                        {msg.data.healthScore}/100
-                      </p>
-                    </div>
-                    <div className="p-4">
-                      <p className="text-slate-400">Risk Level</p>
-                      <p className="text-xl font-bold">{msg.data.risk}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {msg.data?.type === "ai_cfp" && (
-                <div className="mt-4 rounded-xl border border-emerald-500/40 bg-slate-950 overflow-hidden">
-                  <div className="bg-emerald-600/20 px-4 py-3 border-b border-emerald-500/30">
-                    <h3 className="text-lg font-bold text-emerald-200">
-                      AI CFP Financial Planning Report
-                    </h3>
-                    <p className="text-sm text-slate-300 mt-1">
-                      {msg.data.verdict}
-                    </p>
-                  </div>
-
-                  <table className="w-full text-sm">
-                    <tbody>
-                      <tr className="border-b border-slate-800">
-                        <td className="p-3 text-slate-400">Income</td>
-                        <td className="p-3 font-semibold">
-                          ₹{msg.data.income}
-                        </td>
-                      </tr>
-                      <tr className="border-b border-slate-800">
-                        <td className="p-3 text-slate-400">Expenses</td>
-                        <td className="p-3 font-semibold">
-                          ₹{msg.data.expenses}
-                        </td>
-                      </tr>
-                      <tr className="border-b border-slate-800">
-                        <td className="p-3 text-slate-400">EMI</td>
-                        <td className="p-3 font-semibold">₹{msg.data.emi}</td>
-                      </tr>
-                      <tr className="border-b border-slate-800">
-                        <td className="p-3 text-slate-400">
-                          Monthly Savings
-                        </td>
-                        <td className="p-3 font-semibold text-emerald-300">
-                          ₹{msg.data.savings}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="p-3 text-slate-400">Savings Rate</td>
-                        <td className="p-3 font-semibold">
-                          {msg.data.savingsRate}%
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-
-                  <div className="p-4 border-t border-slate-800">
-                    <p className="text-sm font-semibold text-slate-300 mb-2">
-                      Recommended Actions
-                    </p>
-
-                    <div className="space-y-2">
-                      {msg.data.plan?.map((item, i) => (
-                        <div
-                          key={i}
-                          className="rounded-lg bg-slate-900 border border-slate-800 px-3 py-2 text-sm text-slate-200"
-                        >
-                          {i + 1}. {item}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {msg.time && (
-                <p className="text-[10px] text-slate-500 mt-2">{msg.time}</p>
-              )}
             </div>
-          ))
+          </div>
+        ) : (
+          <div className="space-y-5">
+            {messages.map((msg, index) => (
+              <MessageBubble key={index} msg={msg} />
+            ))}
+          </div>
         )}
       </div>
 
-      <div className="flex gap-2">
-        <input
-          value={transcript}
-          onChange={(e) => setTranscript(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          placeholder="Speak or type here..."
-          className="flex-1 bg-slate-800 text-white px-4 py-3 rounded-lg outline-none border border-slate-700"
-        />
+      <div className="border-t border-slate-200 bg-white px-8 py-5">
+        <div className="flex gap-3">
+          <input
+            value={transcript}
+            onChange={(e) => setTranscript(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            placeholder="Ask your financial question..."
+            className="flex-1 rounded-2xl border border-slate-300 bg-white px-5 py-4 text-slate-900 outline-none focus:border-blue-600"
+          />
 
-        <button
-          onClick={handleSend}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-lg"
-        >
-          Send
-        </button>
+          <button
+            onClick={handleSend}
+            className="rounded-2xl bg-blue-700 px-6 py-4 font-bold text-white hover:bg-blue-800"
+          >
+            <Send size={22} />
+          </button>
 
-        {!listening ? (
-          <button
-            onClick={startListening}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-lg"
-          >
-            Start Mic
-          </button>
-        ) : (
-          <button
-            onClick={stopListening}
-            className="bg-yellow-600 hover:bg-yellow-700 text-white px-5 py-3 rounded-lg"
-          >
-            Stop Mic
-          </button>
-        )}
+          {!listening ? (
+            <button
+              onClick={startListening}
+              className="rounded-2xl bg-emerald-600 px-6 py-4 font-bold text-white hover:bg-emerald-700"
+            >
+              <Mic size={22} />
+            </button>
+          ) : (
+            <button
+              onClick={stopListening}
+              className="rounded-2xl bg-amber-500 px-6 py-4 font-bold text-white hover:bg-amber-600"
+            >
+              <Square size={22} />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

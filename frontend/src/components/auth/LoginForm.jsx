@@ -1,23 +1,37 @@
-function LoginForm() {
+function LoginForm({
+  identifier,
+  setIdentifier,
+  password,
+  setPassword,
+  loading,
+  handleLogin,
+}) {
   return (
-    <form className="space-y-5">
+    <form onSubmit={handleLogin} className="space-y-5">
       <input
-        type="email"
-        placeholder="Email Address"
+        type="text"
+        placeholder="Email or Username"
+        value={identifier}
+        onChange={(e) => setIdentifier(e.target.value)}
         className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-white outline-none focus:border-cyan-500"
+        required
       />
 
       <input
         type="password"
         placeholder="Password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
         className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-white outline-none focus:border-cyan-500"
+        required
       />
 
       <button
         type="submit"
-        className="w-full rounded-xl bg-cyan-500 py-3 font-semibold text-white transition hover:bg-cyan-400"
+        disabled={loading}
+        className="w-full rounded-xl bg-cyan-500 py-3 font-semibold text-white transition hover:bg-cyan-400 disabled:opacity-60"
       >
-        Sign In
+        {loading ? "Signing In..." : "Sign In"}
       </button>
     </form>
   );

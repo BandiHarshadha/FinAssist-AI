@@ -3,36 +3,45 @@ import { useNavigate } from "react-router-dom";
 
 function WelcomeCard() {
   const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem("user")) || {};
 
   return (
-    <div className="mb-8 rounded-3xl bg-gradient-to-r from-cyan-600 to-blue-700 p-8 shadow-xl">
-      <h1 className="text-4xl font-bold text-white">
-        👋 Welcome Back, Harshadha
-      </h1>
+    <section className="rounded-3xl bg-gradient-to-r from-slate-950 via-blue-950 to-blue-700 p-9 text-white shadow-xl">
+      <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-center">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-widest text-blue-200">
+            AI Banking Dashboard
+          </p>
 
-      <p className="mt-4 text-cyan-100 text-lg">
-        Your intelligent banking assistant is online and ready to help you with
-        loans, savings, investments, insurance, and much more.
-      </p>
+          <h1 className="mt-3 text-4xl font-extrabold">
+            Welcome back, {user.name || "User"}
+          </h1>
 
-      <div className="mt-8 flex gap-4">
-        <button
-          onClick={() => navigate("/chat")}
-          className="flex items-center gap-2 rounded-xl bg-white px-6 py-3 font-semibold text-blue-700 transition hover:scale-105"
-        >
-          <MessageSquare size={20} />
-          Start New Chat
-        </button>
+          <p className="mt-4 max-w-2xl text-lg text-blue-100">
+            Manage your savings, credit cards, loans, investments, insurance and
+            financial planning from one intelligent assistant.
+          </p>
+        </div>
 
-        <button
-          onClick={() => alert("Reports coming soon!")}
-          className="flex items-center gap-2 rounded-xl border border-white px-6 py-3 font-semibold text-white transition hover:bg-white hover:text-blue-700"
-        >
-          <BarChart3 size={20} />
-          View Reports
-        </button>
+        <div className="flex gap-4">
+          <button
+            onClick={() => navigate("/chat")}
+            className="rounded-xl bg-white px-6 py-3 font-bold text-blue-700 hover:bg-blue-50"
+          >
+            <MessageSquare className="mr-2 inline" size={20} />
+            Ask AI
+          </button>
+
+          <button
+            onClick={() => alert("Reports coming soon")}
+            className="rounded-xl border border-blue-200 px-6 py-3 font-bold text-white hover:bg-white/10"
+          >
+            <BarChart3 className="mr-2 inline" size={20} />
+            Reports
+          </button>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
 

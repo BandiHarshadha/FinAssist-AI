@@ -16,10 +16,15 @@
     "@langchain/core": "^1.2.1",
     "@langchain/langgraph": "^1.4.5",
     "axios": "^1.17.0",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "jsonwebtoken": "^9.0.3",
     "multer": "^2.2.0",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
     "pdf-parse": "^2.4.5"
   },
   "devDependencies": {

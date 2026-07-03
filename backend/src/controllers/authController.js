@@ -1,7 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-//import User from "../models/User.js";
-//import UserMemory from "../models/UserMemory.js";
+import User from "../models/User.js";
 
 const generateToken = (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET, {
@@ -9,23 +8,43 @@ const generateToken = (userId) => {
   });
 };
 
+const safeUserResponse = (user) => {
+  return {
+    id: user.id,
+    name: user.name,
+    username: user.username,
+    email: user.email,
+    googleId: user.googleId,
+    photo: user.photo,
+    provider: user.provider,
+    annualIncome: user.annualIncome,
+    monthlyIncome: user.monthlyIncome,
+    monthlyExpenses: user.monthlyExpenses,
+    emi: user.emi,
+    savings: user.savings,
+    goals: user.goals,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  };
+};
+
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, username, email, password } = req.body;
 
-    if (!name || !email || !password) {
+    if (!name || !username || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: "Name, email and password are required",
+        message: "Name, username, email and password are required",
       });
     }
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findByEmailOrUsername(email, username);
 
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: "User already exists",
+        message: "User already exists with this email or username",
       });
     }
 
@@ -33,35 +52,24 @@ export const registerUser = async (req, res) => {
 
     const user = await User.create({
       name,
+      username,
       email,
       password: hashedPassword,
+      provider: "local",
     });
 
-    await UserMemory.create({
-      userId: user._id,
-      name,
-      income: null,
-      expenses: null,
-      emi: null,
-      goal: null,
-      targetAmount: null,
-      chatHistory: [],
-    });
+    const token = generateToken(user.id);
 
-    const token = generateToken(user._id);
-
-    return res.status(201).json({
+    res.status(201).json({
       success: true,
       message: "User registered successfully",
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      },
+      user: safeUserResponse(user),
     });
   } catch (error) {
-    return res.status(500).json({
+    console.error("Registration Error:", error);
+
+    res.status(500).json({
       success: false,
       message: "Registration failed",
       error: error.message,
@@ -71,21 +79,21 @@ export const registerUser = async (req, res) => {
 
 export const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { identifier, password } = req.body;
 
-    if (!email || !password) {
+    if (!identifier || !password) {
       return res.status(400).json({
         success: false,
-        message: "Email and password are required",
+        message: "Email/username and password are required",
       });
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findByIdentifier(identifier);
 
-    if (!user) {
+    if (!user || !user.password) {
       return res.status(401).json({
         success: false,
-        message: "Invalid email or password",
+        message: "Invalid email/username or password",
       });
     }
 
@@ -94,27 +102,37 @@ export const loginUser = async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: "Invalid email or password",
+        message: "Invalid email/username or password",
       });
     }
 
-    const token = generateToken(user._id);
+    const token = generateToken(user.id);
 
-    return res.json({
+    res.json({
       success: true,
       message: "Login successful",
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      },
+      user: safeUserResponse(user),
     });
   } catch (error) {
-    return res.status(500).json({
+    console.error("Login Error:", error);
+
+    res.status(500).json({
       success: false,
       message: "Login failed",
       error: error.message,
     });
+  }
+};
+
+export const googleLoginSuccess = async (req, res) => {
+  try {
+    const token = generateToken(req.user.id);
+
+    res.redirect(`${process.env.FRONTEND_URL}/dashboard?token=${token}`);
+  } catch (error) {
+    console.error("Google Login Error:", error);
+
+    res.redirect(`${process.env.FRONTEND_URL}/login`);
   }
 };

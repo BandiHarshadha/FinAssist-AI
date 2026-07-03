@@ -1,7 +1,88 @@
 @import "tailwindcss";
 
-body {
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100vh;
   margin: 0;
-  padding: 0;
-  font-family: Inter, sans-serif;
+}
+
+body {
+  font-family: Inter, Arial, sans-serif;
+  background: #f4f7fb;
+  color: #0f172a;
+  overflow-x: hidden;
+}
+
+button {
+  cursor: pointer;
+}
+
+.app-bg {
+  background: #f4f7fb;
+}
+
+.sidebar-btn {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: #cbd5e1;
+  font-size: 15px;
+  font-weight: 500;
+  transition: 0.2s ease;
+}
+
+.sidebar-btn:hover {
+  background: #1e293b;
+  color: #ffffff;
+}
+
+.card {
+  border-radius: 22px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 12px 35px rgba(15, 23, 42, 0.06);
+}
+
+.input-field {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #0f172a;
+  padding: 14px 16px;
+  font-size: 15px;
+  outline: none;
+}
+
+.input-field:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.btn-primary {
+  border-radius: 14px;
+  background: #1d4ed8;
+  color: white;
+  padding: 13px 20px;
+  font-weight: 700;
+}
+
+.btn-primary:hover {
+  background: #1e40af;
+}
+
+.btn-light {
+  border-radius: 14px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 13px 20px;
+  font-weight: 700;
 }
