@@ -1,14 +1,14 @@
 import express from "express";
 import {
   chat,
-  getChatMemory,
-  resetChatMemory,
+  getHistory,
+  clearHistory,
 } from "../controllers/chatController.js";
 
 const router = express.Router();
 
 router.post("/", chat);
-router.get("/memory", getChatMemory);
-router.delete("/memory", resetChatMemory);
+router.get("/history", getHistory);
+router.delete("/history", clearHistory);
 
 export default router;

@@ -1,101 +1,48 @@
-import { useRef, useState } from "react";
-import DigitalTwinCard from "./DigitalTwinCard";
-import AiCfpCard from "./AiCfpCard";
+import { useEffect, useRef, useState } from "react";
 
 function VoiceAssistant() {
-  const [transcript, setTranscript] = useState("");
   const [messages, setMessages] = useState([]);
-  const [digitalTwin, setDigitalTwin] = useState(null);
-  const [aiCfpData, setAiCfpData] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [transcript, setTranscript] = useState("");
   const [listening, setListening] = useState(false);
 
   const recognitionRef = useRef(null);
   const latestTranscriptRef = useRef("");
 
-  const speakText = (text) => {
-    if (!text) return;
+  useEffect(() => {
+    fetch("http://localhost:5001/api/voice/history")
+      .then((res) => res.json())
+      .then((data) => setMessages(data.history || []))
+      .catch(() => {});
+  }, []);
 
+  const speak = (text) => {
     window.speechSynthesis.cancel();
-
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "en-IN";
-    utterance.rate = 0.95;
-
+    utterance.rate = 1;
     window.speechSynthesis.speak(utterance);
   };
 
-  const sendToBackend = async (textToSend) => {
-    const cleanText = String(textToSend || "").trim();
-
-    if (!cleanText) {
-      alert("I did not catch your voice. Please try again.");
-      return;
-    }
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: "user",
-        agent: "You",
-        text: cleanText,
-      },
-    ]);
-
-    setTranscript("");
-    latestTranscriptRef.current = "";
+  const sendToBackend = async (text) => {
+    if (!text.trim()) return;
 
     try {
-      setLoading(true);
-
-      const response = await fetch("http://localhost:5001/api/voice/message", {
+      const res = await fetch("http://localhost:5001/api/voice/message", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          transcript: cleanText,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transcript: text }),
       });
 
-      const data = await response.json();
+      const data = await res.json();
 
-      if (data.agent === "Financial Digital Twin Agent" && data.data) {
-        setDigitalTwin(data.data);
+      if (data.success) {
+        setMessages(data.history || []);
+        speak(data.reply);
+      } else {
+        speak("Sorry, I could not understand that.");
       }
-
-      if (
-        (data.agent === "AI CFP Agent" ||
-          data.agent === "Financial Planning Review") &&
-        data.data
-      ) {
-        setAiCfpData(data.data);
-      }
-
-      const assistantText = data.reply || data.message || "No reply received.";
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          agent: data.agent || "FinAssist",
-          text: assistantText,
-          data: data.data || null,
-        },
-      ]);
-
-      speakText(assistantText);
-    } catch (error) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          agent: "System",
-          text: "Backend connection failed. Please check backend server.",
-        },
-      ]);
-    } finally {
-      setLoading(false);
+    } catch {
+      speak("Backend is not responding.");
     }
   };
 
@@ -104,172 +51,256 @@ function VoiceAssistant() {
       window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      alert("Use Google Chrome. Your browser does not support speech recognition.");
+      alert("Speech recognition is not supported in this browser.");
       return;
     }
 
     const recognition = new SpeechRecognition();
-    recognitionRef.current = recognition;
-
     recognition.lang = "en-IN";
-    recognition.interimResults = true;
     recognition.continuous = false;
+    recognition.interimResults = false;
 
-    latestTranscriptRef.current = "";
-    setTranscript("");
-
-    recognition.onstart = () => {
-      setListening(true);
-    };
+    recognition.onstart = () => setListening(true);
 
     recognition.onresult = (event) => {
-      let spokenText = "";
-
-      for (let i = 0; i < event.results.length; i++) {
-        spokenText += event.results[i][0].transcript + " ";
-      }
-
-      spokenText = spokenText.trim();
-
-      latestTranscriptRef.current = spokenText;
-      setTranscript(spokenText);
-    };
-
-    recognition.onerror = (event) => {
-      setListening(false);
-      alert("Mic error: " + event.error);
+      const text = event.results[0][0].transcript;
+      setTranscript(text);
+      latestTranscriptRef.current = text;
     };
 
     recognition.onend = () => {
       setListening(false);
-
-      const finalText = latestTranscriptRef.current.trim();
-
-      if (finalText) {
-        sendToBackend(finalText);
-      } else {
-        alert("I did not catch your voice. Please speak louder.");
+      if (latestTranscriptRef.current) {
+        sendToBackend(latestTranscriptRef.current);
       }
     };
 
+    recognition.onerror = () => {
+      setListening(false);
+      speak("Voice input failed. Please try again.");
+    };
+
+    recognitionRef.current = recognition;
     recognition.start();
   };
 
   const stopListening = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
+    recognitionRef.current?.stop();
+    setListening(false);
   };
 
-  const sendTypedMessage = () => {
-    sendToBackend(transcript);
+  const handleSend = () => {
+    const text = transcript.trim();
+    if (!text) return;
+
+    latestTranscriptRef.current = text;
+    sendToBackend(text);
+    setTranscript("");
   };
 
-  const clearChat = () => {
+  const clearChat = async () => {
+    await fetch("http://localhost:5001/api/voice/history", {
+      method: "DELETE",
+    });
+
     setMessages([]);
     setTranscript("");
-    setDigitalTwin(null);
-    setAiCfpData(null);
     latestTranscriptRef.current = "";
     window.speechSynthesis.cancel();
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-      <div className="flex justify-between items-center mb-4">
+    <div className="w-full max-w-6xl mx-auto bg-slate-900 rounded-2xl p-5 shadow-xl border border-slate-800">
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-xl font-semibold">FinAssist Voice Assistant</h2>
+          <h2 className="text-2xl font-bold text-white">FinAssist AI</h2>
           <p className="text-sm text-slate-400">
-            Ask about savings, goals, loans, investments, digital twin, or financial planning.
+            Your intelligent money companion for smarter financial decisions.
           </p>
         </div>
 
         <button
           onClick={clearChat}
-          className="px-3 py-2 bg-slate-800 rounded-lg"
+          className="bg-slate-800 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm border border-slate-700"
         >
-          Clear
+          Clear Chat
         </button>
       </div>
 
-      <div className="min-h-[280px] max-h-[420px] overflow-y-auto bg-slate-950 border border-slate-800 rounded-xl p-4 mb-4 space-y-4">
+      <div className="h-[480px] overflow-y-auto bg-slate-950 rounded-xl p-4 space-y-4 mb-4 border border-slate-800">
         {messages.length === 0 ? (
-          <div className="text-slate-500 space-y-2">
-            <p>Chat history appears here.</p>
-            <p>Try: My income is 75000 and expenses are 25000</p>
-            <p>Try: My EMI is 15000</p>
-            <p>Try: Show my financial digital twin</p>
-            <p>Try: Run financial review</p>
-          </div>
+          <p className="text-slate-500 text-center mt-40">
+            Start a conversation about your money, goals, loans, or investments.
+          </p>
         ) : (
-          messages.map((message, index) => (
+          messages.map((msg, index) => (
             <div
               key={index}
-              className={`p-3 rounded-xl ${
-                message.role === "user"
-                  ? "bg-blue-600 ml-10"
-                  : "bg-slate-800 mr-10"
+              className={`p-4 rounded-xl max-w-[90%] border ${
+                msg.role === "user"
+                  ? "bg-blue-600/20 border-blue-500/40 text-white ml-auto"
+                  : "bg-slate-900 border-slate-700 text-white mr-auto"
               }`}
             >
-              <p className="text-xs text-slate-300 mb-1">{message.agent}</p>
-              <p className="whitespace-pre-line">{message.text}</p>
+              {msg.agent && msg.role !== "user" && (
+                <p className="text-xs text-cyan-400 mb-2 font-semibold uppercase tracking-wide">
+                  {msg.agent}
+                </p>
+              )}
 
-              {(message.agent === "AI CFP Agent" ||
-                message.agent === "Financial Planning Review") &&
-                message.data && <AiCfpCard data={message.data} />}
+              <p className="text-sm leading-relaxed text-slate-100">
+                {msg.text || msg.content}
+              </p>
+
+              {msg.data?.type === "digital_twin" && (
+                <div className="mt-4 rounded-xl border border-indigo-500/40 bg-slate-950 overflow-hidden">
+                  <div className="bg-indigo-600/20 px-4 py-3 border-b border-indigo-500/30">
+                    <h3 className="text-lg font-bold text-indigo-200">
+                      Virtual Financial Digital Twin
+                    </h3>
+                    <p className="text-sm text-slate-300 mt-1">
+                      {msg.data.message}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-0 text-sm">
+                    <div className="p-4 border-b border-r border-slate-800">
+                      <p className="text-slate-400">Monthly Income</p>
+                      <p className="text-xl font-bold">₹{msg.data.income}</p>
+                    </div>
+                    <div className="p-4 border-b border-r border-slate-800">
+                      <p className="text-slate-400">Expenses</p>
+                      <p className="text-xl font-bold">₹{msg.data.expenses}</p>
+                    </div>
+                    <div className="p-4 border-b border-slate-800">
+                      <p className="text-slate-400">EMI Load</p>
+                      <p className="text-xl font-bold">{msg.data.emiLoad}%</p>
+                    </div>
+                    <div className="p-4 border-r border-slate-800">
+                      <p className="text-slate-400">Monthly Savings</p>
+                      <p className="text-xl font-bold text-emerald-300">
+                        ₹{msg.data.savings}
+                      </p>
+                    </div>
+                    <div className="p-4 border-r border-slate-800">
+                      <p className="text-slate-400">Health Score</p>
+                      <p className="text-xl font-bold">
+                        {msg.data.healthScore}/100
+                      </p>
+                    </div>
+                    <div className="p-4">
+                      <p className="text-slate-400">Risk Level</p>
+                      <p className="text-xl font-bold">{msg.data.risk}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {msg.data?.type === "ai_cfp" && (
+                <div className="mt-4 rounded-xl border border-emerald-500/40 bg-slate-950 overflow-hidden">
+                  <div className="bg-emerald-600/20 px-4 py-3 border-b border-emerald-500/30">
+                    <h3 className="text-lg font-bold text-emerald-200">
+                      AI CFP Financial Planning Report
+                    </h3>
+                    <p className="text-sm text-slate-300 mt-1">
+                      {msg.data.verdict}
+                    </p>
+                  </div>
+
+                  <table className="w-full text-sm">
+                    <tbody>
+                      <tr className="border-b border-slate-800">
+                        <td className="p-3 text-slate-400">Income</td>
+                        <td className="p-3 font-semibold">
+                          ₹{msg.data.income}
+                        </td>
+                      </tr>
+                      <tr className="border-b border-slate-800">
+                        <td className="p-3 text-slate-400">Expenses</td>
+                        <td className="p-3 font-semibold">
+                          ₹{msg.data.expenses}
+                        </td>
+                      </tr>
+                      <tr className="border-b border-slate-800">
+                        <td className="p-3 text-slate-400">EMI</td>
+                        <td className="p-3 font-semibold">₹{msg.data.emi}</td>
+                      </tr>
+                      <tr className="border-b border-slate-800">
+                        <td className="p-3 text-slate-400">
+                          Monthly Savings
+                        </td>
+                        <td className="p-3 font-semibold text-emerald-300">
+                          ₹{msg.data.savings}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="p-3 text-slate-400">Savings Rate</td>
+                        <td className="p-3 font-semibold">
+                          {msg.data.savingsRate}%
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <div className="p-4 border-t border-slate-800">
+                    <p className="text-sm font-semibold text-slate-300 mb-2">
+                      Recommended Actions
+                    </p>
+
+                    <div className="space-y-2">
+                      {msg.data.plan?.map((item, i) => (
+                        <div
+                          key={i}
+                          className="rounded-lg bg-slate-900 border border-slate-800 px-3 py-2 text-sm text-slate-200"
+                        >
+                          {i + 1}. {item}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {msg.time && (
+                <p className="text-[10px] text-slate-500 mt-2">{msg.time}</p>
+              )}
             </div>
           ))
         )}
+      </div>
 
-        {loading && (
-          <div className="bg-slate-800 mr-10 p-3 rounded-xl">
-            <p className="text-xs text-slate-300 mb-1">FinAssist</p>
-            <p>Thinking...</p>
-          </div>
+      <div className="flex gap-2">
+        <input
+          value={transcript}
+          onChange={(e) => setTranscript(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSend()}
+          placeholder="Speak or type here..."
+          className="flex-1 bg-slate-800 text-white px-4 py-3 rounded-lg outline-none border border-slate-700"
+        />
+
+        <button
+          onClick={handleSend}
+          className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-lg"
+        >
+          Send
+        </button>
+
+        {!listening ? (
+          <button
+            onClick={startListening}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-lg"
+          >
+            Start Mic
+          </button>
+        ) : (
+          <button
+            onClick={stopListening}
+            className="bg-yellow-600 hover:bg-yellow-700 text-white px-5 py-3 rounded-lg"
+          >
+            Stop Mic
+          </button>
         )}
       </div>
-
-      <DigitalTwinCard data={digitalTwin} />
-      <AiCfpCard data={aiCfpData} />
-
-      <textarea
-        className="w-full min-h-[90px] bg-slate-950 border border-slate-700 rounded-xl p-4 text-white outline-none mt-4"
-        placeholder="Speak or type here..."
-        value={transcript}
-        onChange={(e) => {
-          setTranscript(e.target.value);
-          latestTranscriptRef.current = e.target.value;
-        }}
-      />
-
-      <div className="flex flex-wrap gap-3 mt-4">
-        <button
-          onClick={startListening}
-          disabled={listening || loading}
-          className="px-4 py-2 rounded-lg bg-purple-600 disabled:opacity-60"
-        >
-          {listening ? "Listening..." : "Start Mic"}
-        </button>
-
-        <button
-          onClick={stopListening}
-          className="px-4 py-2 rounded-lg bg-red-600"
-        >
-          Stop Mic
-        </button>
-
-        <button
-          onClick={sendTypedMessage}
-          disabled={loading}
-          className="px-4 py-2 rounded-lg bg-blue-600 disabled:opacity-60"
-        >
-          {loading ? "Thinking..." : "Send"}
-        </button>
-      </div>
-
-      {listening && (
-        <p className="mt-3 text-purple-300">Listening now. Speak clearly.</p>
-      )}
     </div>
   );
 }

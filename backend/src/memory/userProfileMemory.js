@@ -1,56 +1,105 @@
-let userMemory = {
-  name: null,
-  income: null,
-  expenses: null,
-  emi: null,
-  goal: null,
-  targetAmount: null,
+const profile = {
+  income: 0,
+  annualIncome: 0,
+  expenses: 0,
+  emi: 0,
+  goal: 0,
+  goalPurpose: "",
+  loanAmount: 0,
+  propertyValue: 0,
+  downPayment: 0,
+  tenureYears: 0,
+  interestRate: 8.5,
 };
 
-export const saveMemory = (message) => {
-  if (
-    message.includes("[REDACTED_ACCOUNT_NUMBER]") ||
-    message.includes("[REDACTED_IFSC]") ||
-    message.includes("[REDACTED_PAN]") ||
-    message.includes("[REDACTED_AADHAAR]") ||
-    message.includes("[REDACTED_CARD_NUMBER]") ||
-    message.includes("[REDACTED_UPI]") ||
-    message.includes("[REDACTED_PHONE]") ||
-    message.includes("[REDACTED_EMAIL]")
-  ) {
-    console.log("✅ Sensitive banking data was redacted before memory save");
+function toAmount(num, unit) {
+  let amount = Number(num);
+  if (["lakh", "lakhs", "lac", "lacs"].includes(unit)) amount *= 100000;
+  if (["cr", "crore", "crores"].includes(unit)) amount *= 10000000;
+  return amount;
+}
+
+function extractByPattern(text, patterns) {
+  const lower = text.toLowerCase();
+
+  for (const pattern of patterns) {
+    const regex = new RegExp(
+      `${pattern}\\s*(is|are|:|=|of|for|need)?\\s*(₹|rs)?\\s*(\\d+(\\.\\d+)?)\\s*(lakh|lakhs|lac|lacs|cr|crore|crores)?`,
+      "i"
+    );
+
+    const match = lower.match(regex);
+    if (match) return toAmount(match[3], match[5]);
   }
 
+  return null;
+}
+
+function extractTenure(text) {
+  const match = text.toLowerCase().match(/(\d+)\s*(year|years|yr|yrs)/);
+  return match ? Number(match[1]) : null;
+}
+
+function extractInterest(text) {
+  const match = text.toLowerCase().match(/(\d+(\.\d+)?)\s*%/);
+  return match ? Number(match[1]) : null;
+}
+
+export function saveMemory(message) {
   const lower = message.toLowerCase();
 
-  const incomeMatch = message.match(/(?:income|earn|salary).*?(\d+)/i);
-  const expensesMatch = message.match(/(?:expenses|spend).*?(\d+)/i);
-  const emiMatch = message.match(/(?:emi).*?(\d+)/i);
-  const targetMatch = message.match(/(?:target|save).*?(\d+)/i);
-  const nameMatch = message.match(/(?:name is|i am|my name is)\s+([a-zA-Z]+)/i);
+  const income = extractByPattern(message, ["income", "salary"]);
+  const expenses = extractByPattern(message, ["monthly expenses", "expenses", "expense"]);
+  const emi = extractByPattern(message, ["emi"]);
+  const goal = extractByPattern(message, ["goal"]);
+  const loanAmount = extractByPattern(message, ["loan amount", "loan need", "need loan", "loan"]);
+  const propertyValue = extractByPattern(message, ["property value", "house price", "price"]);
+  const downPayment = extractByPattern(message, ["down payment", "downpayment"]);
 
-  if (nameMatch) userMemory.name = nameMatch[1];
-  if (incomeMatch) userMemory.income = Number(incomeMatch[1]);
-  if (expensesMatch) userMemory.expenses = Number(expensesMatch[1]);
-  if (emiMatch) userMemory.emi = Number(emiMatch[1]);
-  if (targetMatch) userMemory.targetAmount = Number(targetMatch[1]);
+  if (income !== null) {
+    if (lower.includes("per annum") || lower.includes("annual") || lower.includes("yearly")) {
+      profile.annualIncome = income;
+      profile.income = Math.round(income / 12);
+    } else {
+      profile.income = income;
+      profile.annualIncome = income * 12;
+    }
+  }
 
-  if (lower.includes("house")) userMemory.goal = "House";
-  else if (lower.includes("car")) userMemory.goal = "Car";
-  else if (lower.includes("emergency fund")) userMemory.goal = "Emergency Fund";
-  else if (lower.includes("business")) userMemory.goal = "Business";
-  else if (lower.includes("education")) userMemory.goal = "Education";
-};
+  if (expenses !== null) profile.expenses = expenses;
+  if (emi !== null) profile.emi = emi;
+  if (goal !== null) profile.goal = goal;
+  if (loanAmount !== null) profile.loanAmount = loanAmount;
+  if (propertyValue !== null) profile.propertyValue = propertyValue;
+  if (downPayment !== null) profile.downPayment = downPayment;
 
-export const getMemory = () => userMemory;
+  const tenure = extractTenure(message);
+  if (tenure !== null) profile.tenureYears = tenure;
 
-export const resetMemory = () => {
-  userMemory = {
-    name: null,
-    income: null,
-    expenses: null,
-    emi: null,
-    goal: null,
-    targetAmount: null,
-  };
-};
+  const interest = extractInterest(message);
+  if (interest !== null) profile.interestRate = interest;
+
+  if (lower.includes("house") || lower.includes("home")) profile.goalPurpose = "House";
+  if (lower.includes("bike")) profile.goalPurpose = "Bike";
+  if (lower.includes("car")) profile.goalPurpose = "Car";
+}
+
+export function getMemory() {
+  return profile;
+}
+
+export function resetMemory() {
+  Object.assign(profile, {
+    income: 0,
+    annualIncome: 0,
+    expenses: 0,
+    emi: 0,
+    goal: 0,
+    goalPurpose: "",
+    loanAmount: 0,
+    propertyValue: 0,
+    downPayment: 0,
+    tenureYears: 0,
+    interestRate: 8.5,
+  });
+}
