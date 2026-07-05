@@ -1,0 +1,4 @@
+{
+  "red_flags": ["KYC update link", "remote access app request", "OTP/PIN/CVV request", "too-good-to-be-true investment", "urgent pressure to transfer money"],
+  "action_steps": ["Do not share OTP/PIN/CVV", "Block card or account if needed", "Call bank official support", "Report cyber fraud quickly"]
+}

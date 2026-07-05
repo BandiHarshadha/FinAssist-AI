@@ -1,0 +1,8 @@
+{
+  "opening_account": {
+    "documents": ["PAN", "Aadhaar", "mobile number linked with Aadhaar", "photograph"],
+    "online": true,
+    "minimum_balance_note": "Minimum balance depends on bank and account type. Zero-balance accounts may also be available."
+  },
+  "good_habits": ["Keep 3–6 months expenses as emergency fund", "Separate spending and savings accounts", "Automate savings after salary", "Avoid using emergency fund for shopping"]
+}

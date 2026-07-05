@@ -1,0 +1,5 @@
+{
+  "safe_emi_rule": "Total EMI should ideally stay below 35–40% of monthly income.",
+  "documents": ["PAN", "Aadhaar", "salary slips or income proof", "bank statements", "address proof"],
+  "loan_types": ["personal loan", "home loan", "vehicle loan", "education loan", "gold loan"]
+}

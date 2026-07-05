@@ -1,0 +1,4 @@
+{
+  "safety": ["Never share UPI PIN", "Check receiver name before paying", "Do not approve collect requests from strangers", "Report fraud immediately to bank and 1930 cyber helpline in India"],
+  "common_issues": ["wrong UPI ID", "pending transaction", "failed but amount debited", "collect request scam"]
+}
