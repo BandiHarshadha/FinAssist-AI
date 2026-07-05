@@ -14,6 +14,80 @@
     "emi": 0,
     "savings": 0,
     "goals": [],
-    "createdAt": "2026-07-03T07:52:09.550Z"
+    "createdAt": "2026-07-03T07:52:09.550Z",
+    "customerProfile": {
+      "fullName": "B Harshadha",
+      "mobile": "9876543210",
+      "monthlyIncome": 75000,
+      "annualIncome": 900000,
+      "occupation": "Student",
+      "employmentType": "Student",
+      "city": "Vijayawada",
+      "state": "Andhra Pradesh"
+    },
+    "updatedAt": "2026-07-05T17:33:24.432Z",
+    "bankAccounts": [
+      {
+        "id": "1783272107889",
+        "bankName": "State Bank of India",
+        "accountType": "Savings",
+        "branch": "Vijayawada Main",
+        "ifsc": "SBIN0001234",
+        "maskedAccountNumber": "XXXX4321",
+        "currentBalance": 50000,
+        "availableBalance": 50000,
+        "interestRate": 3.5,
+        "status": "Active",
+        "createdAt": "2026-07-05T17:21:47.889Z"
+      },
+      {
+        "id": "1783272804429",
+        "bankName": "HDFC Bank",
+        "accountType": "Savings",
+        "branch": "",
+        "ifsc": "",
+        "maskedAccountNumber": "",
+        "currentBalance": 0,
+        "availableBalance": 0,
+        "interestRate": 0,
+        "status": "Active",
+        "createdAt": "2026-07-05T17:33:24.429Z"
+      }
+    ],
+    "creditCards": [
+      {
+        "id": "1783272771263",
+        "cardName": "HDFC MoneyBack",
+        "bankName": "HDFC Bank",
+        "cardNetwork": "Visa",
+        "maskedCardNumber": "XXXX1234",
+        "creditLimit": 100000,
+        "usedLimit": 20000,
+        "availableLimit": 80000,
+        "outstandingAmount": 15000,
+        "dueDate": "2026-07-25",
+        "billingCycle": "1st to 30th",
+        "rewardPoints": 1200,
+        "annualFee": 500,
+        "status": "Active",
+        "createdAt": "2026-07-05T17:32:51.263Z"
+      }
+    ],
+    "loans": [
+      {
+        "id": "1783272786809",
+        "loanType": "",
+        "lenderName": "",
+        "loanAmount": 0,
+        "outstanding": 0,
+        "interestRate": 0,
+        "emi": 0,
+        "remainingEmis": 0,
+        "tenureMonths": 0,
+        "nextDueDate": "",
+        "status": "Active",
+        "createdAt": "2026-07-05T17:33:06.809Z"
+      }
+    ]
   }
 ]

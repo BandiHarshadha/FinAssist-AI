@@ -11,6 +11,7 @@ import {
   Landmark,
   ShieldCheck,
   CalendarCheck,
+  UserRound,
 } from "lucide-react";
 
 import { useNavigate } from "react-router-dom";
@@ -45,6 +46,14 @@ function Sidebar() {
         <button onClick={() => navigate("/chat")} className="sidebar-btn">
           <MessageSquare size={19} />
           AI Chat
+        </button>
+
+        <button
+          onClick={() => navigate("/financial-profile")}
+          className="sidebar-btn"
+        >
+          <UserRound size={19} />
+          Financial Profile
         </button>
 
         <p className="px-3 pt-5 text-xs font-bold uppercase tracking-widest text-slate-500">

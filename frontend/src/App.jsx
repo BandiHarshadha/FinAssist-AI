@@ -8,6 +8,8 @@ import Register from "./pages/Register";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
+import FinancialProfile from "./pages/FinancialProfile";
+
 import Savings from "./pages/services/Savings";
 import CreditCards from "./pages/services/CreditCards";
 import HomeLoans from "./pages/services/HomeLoans";
@@ -23,10 +25,13 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<Home />} />
 
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
+        {/* Protected Routes */}
 
         <Route
           path="/dashboard"
@@ -54,6 +59,19 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* NEW Financial Profile */}
+
+        <Route
+          path="/financial-profile"
+          element={
+            <ProtectedRoute>
+              <FinancialProfile />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Services */}
 
         <Route
           path="/services/savings"
@@ -126,6 +144,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* 404 */}
 
         <Route path="*" element={<NotFound />} />
       </Routes>

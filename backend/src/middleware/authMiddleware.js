@@ -12,21 +12,27 @@ export const protect = async (req, res, next) => {
       });
     }
 
-    const token = authHeader.split(" ")[1];
+    const token = authHeader
+      .replace("Bearer ", "")
+      .replaceAll('"', "")
+      .trim();
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    req.user = await User.findById(decoded.userId).select("-password");
+    const user = User.findById(decoded.userId);
 
-    if (!req.user) {
+    if (!user) {
       return res.status(401).json({
         success: false,
         message: "User not found",
       });
     }
 
+    req.user = user;
     next();
   } catch (error) {
+    console.error("JWT Error:", error.message);
+
     return res.status(401).json({
       success: false,
       message: "Not authorized, invalid token",

@@ -12,7 +12,17 @@ model User {
   name      String
   email     String     @unique
   password  String
+
   memory    UserMemory?
+  profile   CustomerProfile?
+  creditProfile CreditProfile?
+  accounts  BankAccount[]
+  debitCards DebitCard[]
+  creditCards CreditCard[]
+  loans     Loan[]
+  goals     FinancialGoal[]
+  digitalTwin FinancialDigitalTwin?
+
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 }
@@ -28,9 +38,177 @@ model UserMemory {
   emi          Int?
   goal         String?
   targetAmount Int?
-
   chatHistory  Json?
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model CustomerProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  fullName        String?
+  preferredName   String?
+  mobile          String?
+  alternateMobile String?
+  dob             DateTime?
+  gender          String?
+  maritalStatus   String?
+  occupation      String?
+  employer        String?
+  employmentType  String?
+  monthlyIncome   Int?
+  annualIncome    Int?
+  pan             String?
+  aadhaar         String?
+  address         String?
+  city            String?
+  state           String?
+  country         String?
+  pinCode         String?
+  nomineeName     String?
+  nomineeContact  String?
+  kycStatus       String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model CreditProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  creditScore       Int?
+  creditUtilization Float?
+  activeLoans       Int?
+  closedLoans       Int?
+  missedPayments    Int?
+  enquiries         Int?
+  creditHistory     String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model BankAccount {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  accountType      String?
+  bankName         String?
+  branch           String?
+  ifsc             String?
+  accountNumber    String?
+  currentBalance   Int?
+  availableBalance Int?
+  interestRate     Float?
+  status           String?
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model DebitCard {
+  id                  String   @id @default(cuid())
+  userId              String
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  cardType            String?
+  network             String?
+  maskedNumber        String?
+  status              String?
+  atmLimit            Int?
+  posLimit            Int?
+  onlineLimit         Int?
+  internationalEnabled Boolean @default(false)
+  contactlessEnabled   Boolean @default(false)
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model CreditCard {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  cardName          String?
+  bankName          String?
+  creditLimit       Int?
+  usedLimit         Int?
+  availableLimit    Int?
+  outstandingAmount Int?
+  dueDate           DateTime?
+  billingCycle      String?
+  rewardPoints      Int?
+  annualFee         Int?
+  interestRate      Float?
+  status            String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Loan {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  loanType        String?
+  loanAmount      Int?
+  outstanding     Int?
+  interestRate    Float?
+  emi             Int?
+  remainingEmis   Int?
+  tenureMonths    Int?
+  nextDueDate     DateTime?
+  status          String?
+  lenderName      String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model FinancialGoal {
+  id                    String   @id @default(cuid())
+  userId                String
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  goalName              String
+  goalAmount            Int
+  savedAmount           Int      @default(0)
+  deadline              DateTime?
+  priority              String?
+  monthlySavingRequired Int?
+  progressPercent       Float?
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model FinancialDigitalTwin {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  monthlyIncome       Int?
+  monthlyExpenses     Int?
+  monthlyEmi          Int?
+  monthlySavings      Int?
+  savingsRate         Float?
+  emiRatio            Float?
+  debtRatio           Float?
+  netWorth            Int?
+  emergencyFundMonths Float?
+  financialScore      Int?
+  riskLevel           String?
+  aiInsights          Json?
+  aiPredictions       Json?
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
