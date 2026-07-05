@@ -1,0 +1,19 @@
+[
+  {
+    "id": "1783065129550",
+    "name": "Harshadha",
+    "username": "harsha",
+    "email": "harsha@gmail.com",
+    "password": "$2b$10$4qVEpo3x2GwoMGGq1VGU.OFBLDZjmYQ5jZNIz1YASoEL5F85pd1Xy",
+    "googleId": null,
+    "photo": "",
+    "provider": "local",
+    "annualIncome": 0,
+    "monthlyIncome": 0,
+    "monthlyExpenses": 0,
+    "emi": 0,
+    "savings": 0,
+    "goals": [],
+    "createdAt": "2026-07-03T07:52:09.550Z"
+  }
+]

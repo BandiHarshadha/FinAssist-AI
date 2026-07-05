@@ -1,0 +1,12 @@
+﻿node_modules/
+.env
+dist/
+.vite/
+.DS_Store
+consent.md
+data-retention.md
+erasure-procedure.md
+rollback.md
+kill-switch.md
+secret-rotation.md
+/src/generated/prisma
