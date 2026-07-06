@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Send, Mic, Square, Trash2, Bot } from "lucide-react";
 import MessageBubble from "./MessageBubble";
 
@@ -31,15 +31,40 @@ function VoiceAssistant() {
     ]);
 
     try {
-      const res = await fetch("http://localhost:5000/api/chat", {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch("http://localhost:5000/api/privacy-chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ message: text }),
       });
 
       const data = await res.json();
+
+      if (data.requiresPrivacyDecision) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            text: "",
+            agent: "UPLAI Privacy Layer",
+            data: {
+              type: "privacy_decision",
+              privacyId: data.privacyId,
+              findings: data.findings,
+              redactedPreview: data.redactedPreview,
+              options: data.options,
+            },
+            time: new Date().toLocaleTimeString(),
+          },
+        ]);
+
+        speak("Sensitive data detected. Please choose Redact and Continue or Send Original.");
+        return;
+      }
 
       if (data.success) {
         setMessages((prev) => [
@@ -49,6 +74,7 @@ function VoiceAssistant() {
             text: data.reply,
             agent: data.agent || "FinAssist AI",
             data: data.data || null,
+            privacy: data.privacy || null,
             time: new Date().toLocaleTimeString(),
           },
         ]);
@@ -62,6 +88,74 @@ function VoiceAssistant() {
       speak("Backend is not responding.");
     }
   };
+
+  const continuePrivacyChat = async (privacyId, decision) => {
+    const protectionMessageId = `protecting_${Date.now()}`;
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: protectionMessageId,
+        role: "assistant",
+        text: "",
+        agent: "UPLAI Privacy Protection",
+        data: {
+          type: "privacy_processing",
+          decision,
+        },
+        time: new Date().toLocaleTimeString(),
+      },
+    ]);
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch("http://localhost:5000/api/privacy-chat/continue", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ privacyId, decision }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setMessages((prev) => [
+          ...prev.filter((msg) => msg.id !== protectionMessageId),
+          {
+            role: "assistant",
+            text: data.reply,
+            agent: data.agent || "FinAssist AI",
+            data: data.data || null,
+            privacy: data.privacy || null,
+            time: new Date().toLocaleTimeString(),
+          },
+        ]);
+
+        speak(data.reply);
+      } else {
+        speak(data.message || "Privacy decision failed.");
+      }
+    } catch (error) {
+      console.error("Privacy continue error:", error);
+      speak("Privacy layer is not responding.");
+    }
+  };
+
+  useEffect(() => {
+    const handler = (event) => {
+      const { privacyId, decision } = event.detail;
+      continuePrivacyChat(privacyId, decision);
+    };
+
+    window.addEventListener("privacy-decision", handler);
+
+    return () => {
+      window.removeEventListener("privacy-decision", handler);
+    };
+  }, []);
 
   const handleSend = () => {
     const text = transcript.trim();
@@ -172,7 +266,7 @@ function VoiceAssistant() {
         ) : (
           <div className="space-y-5">
             {messages.map((msg, index) => (
-              <MessageBubble key={index} msg={msg} />
+              <MessageBubble key={msg.id || index} msg={msg} />
             ))}
           </div>
         )}

@@ -5,10 +5,12 @@ import {
   clearHistory,
 } from "../controllers/chatController.js";
 
+import { optionalProtect } from "../middleware/authMiddleware.js";
+
 const router = express.Router();
 
-router.post("/", chat);
-router.get("/history", getHistory);
-router.delete("/history", clearHistory);
+router.post("/", optionalProtect, chat);
+router.get("/history", optionalProtect, getHistory);
+router.delete("/history", optionalProtect, clearHistory);
 
 export default router;

@@ -1,40 +1,53 @@
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-const savingsKnowledge = require("../knowledge/savings.json");
-import { getMonthlyProfile, formatINR } from "../utils/financeFormat.js";
+const money = (v) => `₹${Math.round(Number(v || 0)).toLocaleString("en-IN")}`;
 
-export function savingsAgent(message, profile = {}) {
-  const money = getMonthlyProfile(profile);
+export function savingsAgent(message, twin = {}) {
+  const income = Number(twin.monthlyIncome || 0);
+  const expenses = Number(twin.monthlyExpenses || 0);
+  const emi = Number(twin.totalEmi || 0);
+  const savings = Number(twin.monthlySavings || 0);
+  const savingsRate = Number(twin.savingsRate || 0);
 
-  if (!money.income) {
+  if (!income) {
     return {
       agent: "Savings Agent",
-      reply: `Absolutely, I can help you plan savings.
-
-To create your savings plan, tell me:
-• Monthly income
-• Monthly expenses
-• Existing EMI
-• Your goal amount
-
-For savings accounts, usually required documents are ${savingsKnowledge.opening_account.documents.join(", ")}.`,
-      data: { type: "savings_help" },
+      reply:
+        "Please add your monthly income in Financial Profile. Then I can calculate your monthly savings automatically.",
+      data: { type: "missing_income" },
     };
   }
 
   return {
     agent: "Savings Agent",
-    reply: `Your estimated monthly savings are ${formatINR(money.savings)}.
+    reply: `
+💰 **Savings Analysis**
 
-Your savings rate is ${money.savingsRate}%, which shows how much of your income is staying with you after expenses and EMI.
+✅ **Monthly Savings:** ${money(savings)}
 
-A practical plan:
-• First build an emergency fund of 3–6 months expenses.
-• Keep goal money separate from daily spending money.
-• Automate savings after salary comes.
-• Use FD/RD for short-term goals and SIPs for long-term goals.
+📊 **Your Snapshot**
+• Income: ${money(income)}
+• Expenses: ${money(expenses)}
+• EMI: ${money(emi)}
+• Savings Rate: ${savingsRate}%
 
-For a savings account, common documents are ${savingsKnowledge.opening_account.documents.join(", ")}.`,
-    data: { type: "savings_plan", ...money },
-  };
+💡 **My Advice**
+${
+  savingsRate >= 30
+    ? "Excellent! Your savings rate is strong. You can start goal-based investing."
+    : savingsRate >= 15
+    ? "Good, but you can improve by reducing unnecessary spending."
+    : "Your savings rate is low. First reduce expenses or EMI burden."
+}
+
+🎯 **Next Step**
+Try to maintain at least **20–30% savings rate** every month.
+`,
+      data: {
+        type: "savings_analysis",
+        income,
+        expenses,
+        emi,
+        savings,
+        savingsRate,
+      },
+    };
 }

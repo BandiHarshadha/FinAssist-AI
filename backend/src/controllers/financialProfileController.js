@@ -1,18 +1,67 @@
 import User from "../models/User.js";
+import { calculateDigitalTwin } from "../tools/digitalTwinCalculator.js";
+
+const recalculateAndSaveDigitalTwin = (userId) => {
+  const user = User.findById(userId);
+  const digitalTwin = calculateDigitalTwin(user);
+
+  User.update(userId, {
+    financialDigitalTwin: digitalTwin,
+    savings: digitalTwin.monthlySavings,
+    emi: digitalTwin.totalEmi,
+  });
+
+  return digitalTwin;
+};
+
+const addItem = (req, res, key, item, message) => {
+  const currentUser = User.findById(req.user.id);
+
+  const updatedUser = User.update(req.user.id, {
+    [key]: [...(currentUser[key] || []), item],
+  });
+
+  const digitalTwin = recalculateAndSaveDigitalTwin(req.user.id);
+
+  res.json({
+    success: true,
+    message,
+    [key]: updatedUser[key],
+    digitalTwin,
+  });
+};
+
+const updateItem = (req, res, key, message) => {
+  const currentUser = User.findById(req.user.id);
+
+  const updatedList = (currentUser[key] || []).map((item) =>
+    item.id === req.params.id
+      ? {
+          ...item,
+          ...req.body,
+          updatedAt: new Date().toISOString(),
+        }
+      : item
+  );
+
+  const updatedUser = User.update(req.user.id, {
+    [key]: updatedList,
+  });
+
+  const digitalTwin = recalculateAndSaveDigitalTwin(req.user.id);
+
+  res.json({
+    success: true,
+    message,
+    [key]: updatedUser[key],
+    digitalTwin,
+  });
+};
 
 export const getFinancialProfile = async (req, res) => {
   try {
     const user = User.findById(req.user.id);
     res.json({ success: true, data: user });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-export const updateFinancialProfile = async (req, res) => {
-  try {
-    const updatedUser = User.update(req.user.id, { ...req.body });
-    res.json({ success: true, message: "Financial profile updated", user: updatedUser });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -27,26 +76,19 @@ export const updateCustomerProfile = async (req, res) => {
         ...(currentUser.customerProfile || {}),
         ...req.body,
       },
+      monthlyIncome: Number(req.body.monthlyIncome || currentUser.monthlyIncome || 0),
+      annualIncome: Number(req.body.annualIncome || currentUser.annualIncome || 0),
+      monthlyExpenses: Number(req.body.monthlyExpenses || currentUser.monthlyExpenses || 0),
     });
 
-    res.json({ success: true, customerProfile: updatedUser.customerProfile });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
+    const digitalTwin = recalculateAndSaveDigitalTwin(req.user.id);
 
-export const updateCreditProfile = async (req, res) => {
-  try {
-    const currentUser = User.findById(req.user.id);
-
-    const updatedUser = User.update(req.user.id, {
-      creditProfile: {
-        ...(currentUser.creditProfile || {}),
-        ...req.body,
-      },
+    res.json({
+      success: true,
+      message: "Customer profile saved",
+      customerProfile: updatedUser.customerProfile,
+      digitalTwin,
     });
-
-    res.json({ success: true, creditProfile: updatedUser.creditProfile });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -54,27 +96,29 @@ export const updateCreditProfile = async (req, res) => {
 
 export const addBankAccount = async (req, res) => {
   try {
-    const currentUser = User.findById(req.user.id);
+    addItem(
+      req,
+      res,
+      "bankAccounts",
+      {
+        id: Date.now().toString(),
+        ...req.body,
+        currentBalance: Number(req.body.currentBalance || 0),
+        availableBalance: Number(req.body.availableBalance || 0),
+        interestRate: Number(req.body.interestRate || 0),
+        status: req.body.status || "Active",
+        createdAt: new Date().toISOString(),
+      },
+      "Bank account added"
+    );
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
-    const newAccount = {
-      id: Date.now().toString(),
-      bankName: req.body.bankName || "",
-      accountType: req.body.accountType || "Savings",
-      branch: req.body.branch || "",
-      ifsc: req.body.ifsc || "",
-      maskedAccountNumber: req.body.maskedAccountNumber || "",
-      currentBalance: Number(req.body.currentBalance || 0),
-      availableBalance: Number(req.body.availableBalance || 0),
-      interestRate: Number(req.body.interestRate || 0),
-      status: req.body.status || "Active",
-      createdAt: new Date().toISOString(),
-    };
-
-    const updatedUser = User.update(req.user.id, {
-      bankAccounts: [...(currentUser.bankAccounts || []), newAccount],
-    });
-
-    res.json({ success: true, message: "Bank account added", bankAccounts: updatedUser.bankAccounts });
+export const updateBankAccount = async (req, res) => {
+  try {
+    updateItem(req, res, "bankAccounts", "Bank account updated");
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -82,31 +126,32 @@ export const addBankAccount = async (req, res) => {
 
 export const addCreditCard = async (req, res) => {
   try {
-    const currentUser = User.findById(req.user.id);
+    addItem(
+      req,
+      res,
+      "creditCards",
+      {
+        id: Date.now().toString(),
+        ...req.body,
+        creditLimit: Number(req.body.creditLimit || 0),
+        usedLimit: Number(req.body.usedLimit || 0),
+        availableLimit: Number(req.body.availableLimit || 0),
+        outstandingAmount: Number(req.body.outstandingAmount || 0),
+        rewardPoints: Number(req.body.rewardPoints || 0),
+        annualFee: Number(req.body.annualFee || 0),
+        status: req.body.status || "Active",
+        createdAt: new Date().toISOString(),
+      },
+      "Credit card added"
+    );
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
-    const newCard = {
-      id: Date.now().toString(),
-      cardName: req.body.cardName || "",
-      bankName: req.body.bankName || "",
-      cardNetwork: req.body.cardNetwork || "",
-      maskedCardNumber: req.body.maskedCardNumber || "",
-      creditLimit: Number(req.body.creditLimit || 0),
-      usedLimit: Number(req.body.usedLimit || 0),
-      availableLimit: Number(req.body.availableLimit || 0),
-      outstandingAmount: Number(req.body.outstandingAmount || 0),
-      dueDate: req.body.dueDate || "",
-      billingCycle: req.body.billingCycle || "",
-      rewardPoints: Number(req.body.rewardPoints || 0),
-      annualFee: Number(req.body.annualFee || 0),
-      status: req.body.status || "Active",
-      createdAt: new Date().toISOString(),
-    };
-
-    const updatedUser = User.update(req.user.id, {
-      creditCards: [...(currentUser.creditCards || []), newCard],
-    });
-
-    res.json({ success: true, message: "Credit card added", creditCards: updatedUser.creditCards });
+export const updateCreditCard = async (req, res) => {
+  try {
+    updateItem(req, res, "creditCards", "Credit card updated");
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -114,35 +159,32 @@ export const addCreditCard = async (req, res) => {
 
 export const addLoan = async (req, res) => {
   try {
-    const currentUser = User.findById(req.user.id);
+    addItem(
+      req,
+      res,
+      "loans",
+      {
+        id: Date.now().toString(),
+        ...req.body,
+        loanAmount: Number(req.body.loanAmount || 0),
+        outstanding: Number(req.body.outstanding || 0),
+        interestRate: Number(req.body.interestRate || 0),
+        emi: Number(req.body.emi || 0),
+        remainingEmis: Number(req.body.remainingEmis || 0),
+        tenureMonths: Number(req.body.tenureMonths || 0),
+        status: req.body.status || "Active",
+        createdAt: new Date().toISOString(),
+      },
+      "Loan added"
+    );
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
-    const newLoan = {
-      id: Date.now().toString(),
-      loanType: req.body.loanType || "",
-      lenderName: req.body.lenderName || "",
-      loanAmount: Number(req.body.loanAmount || 0),
-      outstanding: Number(req.body.outstanding || 0),
-      interestRate: Number(req.body.interestRate || 0),
-      emi: Number(req.body.emi || 0),
-      remainingEmis: Number(req.body.remainingEmis || 0),
-      tenureMonths: Number(req.body.tenureMonths || 0),
-      nextDueDate: req.body.nextDueDate || "",
-      status: req.body.status || "Active",
-      createdAt: new Date().toISOString(),
-    };
-
-    const allLoans = [...(currentUser.loans || []), newLoan];
-
-    const totalEmi = allLoans
-      .filter((loan) => loan.status === "Active")
-      .reduce((sum, loan) => sum + Number(loan.emi || 0), 0);
-
-    const updatedUser = User.update(req.user.id, {
-      loans: allLoans,
-      emi: totalEmi,
-    });
-
-    res.json({ success: true, message: "Loan added", loans: updatedUser.loans, totalEmi });
+export const updateLoan = async (req, res) => {
+  try {
+    updateItem(req, res, "loans", "Loan updated");
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -150,25 +192,30 @@ export const addLoan = async (req, res) => {
 
 export const addInvestment = async (req, res) => {
   try {
-    const currentUser = User.findById(req.user.id);
+    addItem(
+      req,
+      res,
+      "investments",
+      {
+        id: Date.now().toString(),
+        ...req.body,
+        investedAmount: Number(req.body.investedAmount || 0),
+        currentValue: Number(req.body.currentValue || 0),
+        monthlyContribution: Number(req.body.monthlyContribution || 0),
+        annualReturn: Number(req.body.annualReturn || 0),
+        status: req.body.status || "Active",
+        createdAt: new Date().toISOString(),
+      },
+      "Investment added"
+    );
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
-    const newInvestment = {
-      id: Date.now().toString(),
-      investmentType: req.body.investmentType || "",
-      investmentName: req.body.investmentName || "",
-      investedAmount: Number(req.body.investedAmount || 0),
-      currentValue: Number(req.body.currentValue || 0),
-      monthlyContribution: Number(req.body.monthlyContribution || 0),
-      annualReturn: Number(req.body.annualReturn || 0),
-      status: req.body.status || "Active",
-      createdAt: new Date().toISOString(),
-    };
-
-    const updatedUser = User.update(req.user.id, {
-      investments: [...(currentUser.investments || []), newInvestment],
-    });
-
-    res.json({ success: true, message: "Investment added", investments: updatedUser.investments });
+export const updateInvestment = async (req, res) => {
+  try {
+    updateItem(req, res, "investments", "Investment updated");
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -176,25 +223,55 @@ export const addInvestment = async (req, res) => {
 
 export const addInsurance = async (req, res) => {
   try {
-    const currentUser = User.findById(req.user.id);
+    addItem(
+      req,
+      res,
+      "insurance",
+      {
+        id: Date.now().toString(),
+        ...req.body,
+        coverageAmount: Number(req.body.coverageAmount || 0),
+        premium: Number(req.body.premium || 0),
+        status: req.body.status || "Active",
+        createdAt: new Date().toISOString(),
+      },
+      "Insurance added"
+    );
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
-    const newInsurance = {
-      id: Date.now().toString(),
-      insuranceType: req.body.insuranceType || "",
-      insurer: req.body.insurer || "",
-      policyNumber: req.body.policyNumber || "",
-      coverageAmount: Number(req.body.coverageAmount || 0),
-      premium: Number(req.body.premium || 0),
-      renewalDate: req.body.renewalDate || "",
-      status: req.body.status || "Active",
-      createdAt: new Date().toISOString(),
-    };
+export const updateInsurance = async (req, res) => {
+  try {
+    updateItem(req, res, "insurance", "Insurance updated");
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
-    const updatedUser = User.update(req.user.id, {
-      insurance: [...(currentUser.insurance || []), newInsurance],
+export const getDigitalTwin = async (req, res) => {
+  try {
+    const digitalTwin = recalculateAndSaveDigitalTwin(req.user.id);
+
+    res.json({
+      success: true,
+      data: digitalTwin,
     });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
-    res.json({ success: true, message: "Insurance added", insurance: updatedUser.insurance });
+export const recalculateDigitalTwin = async (req, res) => {
+  try {
+    const digitalTwin = recalculateAndSaveDigitalTwin(req.user.id);
+
+    res.json({
+      success: true,
+      message: "Digital Twin recalculated successfully",
+      data: digitalTwin,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

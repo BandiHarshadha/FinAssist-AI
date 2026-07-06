@@ -1,48 +1,71 @@
-import { getMemory } from "../memory/userProfileMemory.js";
+import User from "../models/User.js";
+import { calculateDigitalTwin } from "../tools/digitalTwinCalculator.js";
 
-export function financialDigitalTwinAgent() {
-  const memory = getMemory();
+export function financialDigitalTwinAgent(userId = null) {
+  if (!userId) {
+    return {
+      agent: "Virtual Financial Digital Twin",
+      reply: "Please login and complete your Financial Profile first.",
+      data: { type: "digital_twin_missing_profile" },
+    };
+  }
 
-  const income = Number(memory.income || 0);
-  const expenses = Number(memory.expenses || 0);
-  const emi = Number(memory.emi || 0);
-  const goal = Number(memory.goal || 0);
+  const user = User.findById(userId);
+  const twin = calculateDigitalTwin(user);
 
-  const savings = income - expenses - emi;
-  const savingsRate = income ? Math.round((savings / income) * 100) : 0;
-  const emiLoad = income ? Math.round((emi / income) * 100) : 0;
-
-  const healthScore = Math.max(
-    0,
-    Math.min(
-      100,
-      50 +
-        (savingsRate >= 30 ? 25 : savingsRate >= 15 ? 10 : -10) -
-        (emiLoad > 35 ? 20 : 0)
-    )
-  );
-
-  const risk =
-    emiLoad > 35 ? "High" : savingsRate >= 25 ? "Low" : "Moderate";
+  User.update(userId, {
+    financialDigitalTwin: twin,
+    savings: twin.monthlySavings,
+    emi: twin.totalEmi,
+  });
 
   return {
     agent: "Virtual Financial Digital Twin",
-    reply: `Your financial twin is ready. Savings ₹${savings}/month, health score ${healthScore}/100, risk: ${risk}.`,
+    reply: "Your Financial Digital Twin is ready.",
     data: {
-      type: "digital_twin",
-      income,
-      expenses,
-      emi,
-      goal,
-      savings,
-      savingsRate,
-      emiLoad,
-      healthScore,
-      risk,
-      message:
-        risk === "High"
-          ? "High EMI pressure detected. Reduce debt before new purchases."
-          : "Your financial position is stable. Keep protecting your savings.",
+      type: "digital_twin_card",
+      title: "Financial Digital Twin",
+      score: twin.financialScore,
+      riskLevel: twin.riskLevel,
+      netWorth: twin.netWorth,
+      sections: [
+        {
+          title: "Cash Flow",
+          rows: [
+            ["Monthly Income", twin.monthlyIncome],
+            ["Monthly Expenses", twin.monthlyExpenses],
+            ["Monthly EMI", twin.totalEmi],
+            ["Monthly Savings", twin.monthlySavings],
+            ["Savings Rate", `${twin.savingsRate}%`],
+          ],
+        },
+        {
+          title: "Assets & Liabilities",
+          rows: [
+            ["Bank Balance", twin.totalBankBalance],
+            ["Investments", twin.totalInvestmentValue],
+            ["Total Assets", twin.totalAssets],
+            ["Loan Outstanding", twin.totalLoanOutstanding],
+            ["Total Liabilities", twin.totalLiabilities],
+          ],
+        },
+        {
+          title: "Credit Profile",
+          rows: [
+            ["Credit Limit", twin.totalCreditLimit],
+            ["Credit Used", twin.totalCreditUsed],
+            ["Credit Utilization", `${twin.creditUtilization}%`],
+            ["Active Loans", twin.activeLoans],
+            ["Active Credit Cards", twin.activeCreditCards],
+          ],
+        },
+      ],
+      insight:
+        twin.financialScore >= 80
+          ? "Your financial health is strong. Focus on investments, tax planning and wealth building."
+          : twin.financialScore >= 60
+          ? "Your financial health is moderate. Improve savings and reduce EMI pressure."
+          : "Your financial health needs attention. Build savings and reduce liabilities first.",
     },
   };
 }

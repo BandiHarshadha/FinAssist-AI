@@ -1,54 +1,59 @@
-import { askAgent } from "../services/agentService.js";
-import { emiCalculator } from "../tools/emiCalculator.js";
+const money = (v) => `₹${Math.round(Number(v || 0)).toLocaleString("en-IN")}`;
 
-export const loanAgent = async (message) => {
-  console.log("Loan Agent received:", message);
+export function loanAgent(message, twin = {}) {
+  const income = Number(twin.monthlyIncome || 0);
+  const emi = Number(twin.totalEmi || 0);
+  const emiRatio = Number(twin.emiRatio || 0);
+  const activeLoans = Number(twin.activeLoans || 0);
+  const score = Number(twin.financialScore || 0);
 
-  const emiRegex =
-    /(\d+)\s*(lakh|lakhs)?[\s\S]*?(\d+\.?\d*)%?[\s\S]*?(\d+)\s*(year|years)/i;
-
-  const match = message.match(emiRegex);
-
-  console.log("EMI Match:", match);
-
-  if (match) {
-    let amount = parseFloat(match[1]);
-
-    if (match[2]) {
-      amount = amount * 100000;
-    }
-
-    const rate = parseFloat(match[3]);
-    const years = parseInt(match[4]);
-
-    const result = emiCalculator(amount, rate, years);
-
+  if (!income) {
     return {
       agent: "Loan Agent",
-      tool: "EMI Tool",
-      reply: `🏠 EMI Calculation
-
-Loan Amount: ₹${amount.toLocaleString("en-IN")}
-Interest Rate: ${rate}%
-Tenure: ${years} years
-
-💰 Monthly EMI: ₹${Number(result.emi).toLocaleString("en-IN")}
-
-This result was calculated using the EMI Calculator Tool.`,
+      reply:
+        "Please add your monthly income in Financial Profile. Then I can check your loan eligibility personally.",
+      data: { type: "missing_income" },
     };
   }
 
-  const systemPrompt = `
-You are FinAssist AI Loan Advisor.
-Help with home loans, personal loans, education loans, vehicle loans, EMI, eligibility, and interest rates.
-Use bullet points and suggest next steps.
-`;
+  let decision = "Loan eligibility looks moderate.";
 
-  const reply = await askAgent(systemPrompt, message);
+  if (emiRatio <= 25 && score >= 75) {
+    decision = "✅ You have a good chance of getting a loan.";
+  } else if (emiRatio <= 40) {
+    decision = "⚠️ You may get a loan, but approval amount may be limited.";
+  } else {
+    decision = "❌ Loan approval may be difficult right now because EMI burden is high.";
+  }
 
   return {
     agent: "Loan Agent",
-    tool: "None",
-    reply,
+    reply: `
+🏦 **Loan Eligibility Check**
+
+${decision}
+
+📊 **Your Profile**
+• Monthly Income: ${money(income)}
+• Current EMI: ${money(emi)}
+• EMI Ratio: ${emiRatio}%
+• Active Loans: ${activeLoans}
+• Financial Score: ${score}/100
+
+💡 **Suggestion**
+${
+  emiRatio > 40
+    ? "Reduce existing EMI burden before applying for a new loan."
+    : "You can compare banks/NBFCs and apply only where eligibility is strong."
+}
+`,
+    data: {
+      type: "loan_eligibility",
+      income,
+      emi,
+      emiRatio,
+      activeLoans,
+      score,
+    },
   };
-};
+}

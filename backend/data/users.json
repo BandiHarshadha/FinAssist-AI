@@ -8,24 +8,25 @@
     "googleId": null,
     "photo": "",
     "provider": "local",
-    "annualIncome": 0,
-    "monthlyIncome": 0,
-    "monthlyExpenses": 0,
-    "emi": 0,
-    "savings": 0,
+    "annualIncome": 3599996,
+    "monthlyIncome": 300000,
+    "monthlyExpenses": 100000,
+    "emi": 100000,
+    "savings": 100000,
     "goals": [],
     "createdAt": "2026-07-03T07:52:09.550Z",
     "customerProfile": {
-      "fullName": "B Harshadha",
-      "mobile": "9876543210",
-      "monthlyIncome": 75000,
-      "annualIncome": 900000,
-      "occupation": "Student",
-      "employmentType": "Student",
-      "city": "Vijayawada",
-      "state": "Andhra Pradesh"
+      "fullName": "harsha",
+      "mobile": "1234567890",
+      "monthlyIncome": "300000",
+      "annualIncome": "3599996",
+      "occupation": "software",
+      "employmentType": "private",
+      "city": "delhi",
+      "state": "delhi",
+      "monthlyExpenses": "100000"
     },
-    "updatedAt": "2026-07-05T17:33:24.432Z",
+    "updatedAt": "2026-07-06T05:57:05.172Z",
     "bankAccounts": [
       {
         "id": "1783272107889",
@@ -52,6 +53,19 @@
         "interestRate": 0,
         "status": "Active",
         "createdAt": "2026-07-05T17:33:24.429Z"
+      },
+      {
+        "id": "1783309966321",
+        "bankName": "hdfc",
+        "accountType": "Savings",
+        "branch": "delhi",
+        "ifsc": "hdfc3254",
+        "maskedAccountNumber": "23456789012",
+        "currentBalance": 10000000,
+        "availableBalance": 499996,
+        "interestRate": 2,
+        "status": "Active",
+        "createdAt": "2026-07-06T03:52:46.321Z"
       }
     ],
     "creditCards": [
@@ -87,7 +101,47 @@
         "nextDueDate": "",
         "status": "Active",
         "createdAt": "2026-07-05T17:33:06.809Z"
+      },
+      {
+        "id": "1783310062448",
+        "loanType": "personal",
+        "lenderName": "harshi",
+        "loanAmount": 1000000,
+        "outstanding": -1,
+        "interestRate": 2,
+        "emi": 100000,
+        "remainingEmis": 6,
+        "tenureMonths": 5,
+        "nextDueDate": "2026-08-08",
+        "status": "Active",
+        "createdAt": "2026-07-06T03:54:22.448Z"
       }
-    ]
+    ],
+    "financialDigitalTwin": {
+      "monthlyIncome": 300000,
+      "monthlyExpenses": 100000,
+      "monthlySavings": 100000,
+      "totalEmi": 100000,
+      "emiRatio": 33,
+      "savingsRate": 33,
+      "totalBankBalance": 10050000,
+      "totalInvestmentValue": 0,
+      "totalAssets": 10050000,
+      "totalLoanOutstanding": -1,
+      "totalCreditLimit": 100000,
+      "totalCreditUsed": 20000,
+      "totalLiabilities": 19999,
+      "netWorth": 10030001,
+      "creditUtilization": 20,
+      "totalInsuranceCover": 0,
+      "monthlyInsurancePremium": 0,
+      "activeLoans": 2,
+      "activeCreditCards": 1,
+      "activeInvestments": 0,
+      "activeInsurancePolicies": 0,
+      "financialScore": 95,
+      "riskLevel": "Low",
+      "updatedAt": "2026-07-06T05:57:05.170Z"
+    }
   }
 ]

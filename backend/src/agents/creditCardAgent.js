@@ -1,50 +1,77 @@
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-const creditKnowledge = require("../knowledge/creditcards.json");
-import { getMonthlyProfile, formatINR } from "../utils/financeFormat.js";
-import { estimateCreditScore } from "../tools/creditScoreEstimator.js";
+const money = (v) => `₹${Math.round(Number(v || 0)).toLocaleString("en-IN")}`;
 
 export function creditCardAgent(message, profile = {}) {
-  const money = getMonthlyProfile(profile);
-  const estimate = estimateCreditScore({ emiLoad: money.emiLoad, hasCreditHistory: false });
+  const income = Number(profile.income || 0);
+  const emi = Number(profile.emi || 0);
+  const expenses = Number(profile.expenses || 0);
+  const emiLoad = Number(profile.emiLoad || 0);
+  const creditUtilization = Number(profile.creditUtilization || 0);
+  const activeLoans = Number(profile.activeLoans || 0);
+  const activeCreditCards = Number(profile.activeCreditCards || 0);
+  const financialScore = Number(profile.financialScore || 0);
+  const riskLevel = profile.riskLevel || "Unknown";
 
-  if (!money.income) {
+  if (!income) {
     return {
       agent: "Credit Card Agent",
-      reply: `Absolutely! I can help you choose the right credit card.
-
-Before recommending one, tell me:
-• What is your monthly income?
-• Do you already have loans or EMIs?
-• Do you know your credit score?
-• Main goal: cashback, travel, fuel, shopping, or building credit?
-
-Then I’ll suggest the best type of card and explain why it fits you.`,
-      data: { type: "credit_card_questions" },
+      reply:
+        "I can check your credit card eligibility, but please add your income in Financial Profile first. After that I will answer personally without asking again.",
+      data: { type: "missing_income" },
     };
   }
 
-  const safeLimit = Math.round(money.income * 0.5);
+  let decision = "";
+  let reason = "";
+
+  if (income >= 30000 && emiLoad <= 30 && creditUtilization <= 40) {
+    decision = "Yes, you have a good chance of getting a credit card.";
+    reason =
+      "Your income, EMI load, and credit usage look healthy for credit card eligibility.";
+  } else if (income >= 20000 && emiLoad <= 45) {
+    decision = "You may get a basic or entry-level credit card.";
+    reason =
+      "Your income is acceptable, but EMI load or credit usage should be monitored.";
+  } else {
+    decision = "It may be difficult to get a credit card right now.";
+    reason =
+      "Your income, EMI burden, or credit utilization may reduce approval chances.";
+  }
 
   return {
     agent: "Credit Card Agent",
-    reply: `Yes, you may be eligible for a credit card if your income proof and bank checks are fine.
+    reply: `${decision}
 
-Based on your saved profile:
-• Monthly income: ${formatINR(money.income)}
-• Existing EMI load: ${money.emiLoad}%
-• Estimated beginner credit score band: ${estimate.band}
+Reason: ${reason}
 
-Recommended card type:
-• If you are new: beginner/no-fee credit card
-• If you shop online: cashback card
-• If you travel: travel/rewards card
-• If you use fuel often: fuel card
+Your profile check:
+Income: ${money(income)}
+Monthly EMI: ${money(emi)}
+Monthly Expenses: ${money(expenses)}
+EMI Ratio: ${emiLoad}%
+Credit Utilization: ${creditUtilization}%
+Active Loans: ${activeLoans}
+Existing Credit Cards: ${activeCreditCards}
+Financial Score: ${financialScore}/100
+Risk Level: ${riskLevel}
 
-Safe usage rules:
-${creditKnowledge.safe_rules.map((rule) => `• ${rule}`).join("\n")}
-
-A safe spending limit for you is around ${formatINR(safeLimit)} or lower, but try to use only 30–40% of the card limit.`,
-    data: { type: "credit_card_eligibility", safeLimit, creditEstimate: estimate, ...money },
+My suggestion: ${
+      creditUtilization > 40
+        ? "Reduce card usage below 30% before applying for a new card."
+        : activeCreditCards === 0
+        ? "Start with a beginner-friendly lifetime-free card."
+        : "You can compare reward cards, cashback cards, or travel cards based on your spending."
+    }`,
+    data: {
+      type: "credit_card_eligibility",
+      income,
+      emi,
+      expenses,
+      emiLoad,
+      creditUtilization,
+      activeLoans,
+      activeCreditCards,
+      financialScore,
+      riskLevel,
+    },
   };
 }

@@ -12,11 +12,7 @@ export const protect = async (req, res, next) => {
       });
     }
 
-    const token = authHeader
-      .replace("Bearer ", "")
-      .replaceAll('"', "")
-      .trim();
-
+    const token = authHeader.replace("Bearer ", "").replaceAll('"', "").trim();
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const user = User.findById(decoded.userId);
@@ -31,11 +27,30 @@ export const protect = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
-    console.error("JWT Error:", error.message);
-
     return res.status(401).json({
       success: false,
       message: "Not authorized, invalid token",
     });
+  }
+};
+
+export const optionalProtect = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return next();
+    }
+
+    const token = authHeader.replace("Bearer ", "").replaceAll('"', "").trim();
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = User.findById(decoded.userId);
+
+    if (user) req.user = user;
+
+    next();
+  } catch {
+    next();
   }
 };
